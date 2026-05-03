@@ -1545,6 +1545,7 @@ def call_llm(paper_text: str, model: str = DEFAULT_MODEL) -> Dict[str, Any]:
         genai.configure(api_key=gemini_key)
         # response_mime_type \uc81c\uc678: gemini-2.5-preview \ud638\ud658\uc131 \ubb38\uc81c \ud68c\ud53c
         gmodel = genai.GenerativeModel(model)
+        last_error = ""
         for attempt in range(max_retries):
             try:
                 prompt = f"{SYSTEM_PROMPT}\n\n[\ubb38\uc11c \ud14d\uc2a4\ud2b8]\n{text}\n\n\ucd9c\ub825\uc740 \ubc18\ub4dc\uc2dc JSON\ub9cc \ucd9c\ub825. \ub9c8\ud06c\ub2e4\uc6b4 \ucf54\ub4dc\ube14\ub85d \uc5c6\uc774."
@@ -1557,7 +1558,8 @@ def call_llm(paper_text: str, model: str = DEFAULT_MODEL) -> Dict[str, Any]:
                     content = json_match.group(1).strip()
                 return json.loads(content)
             except Exception as e:
-                print(f"  [WARN] Gemini attempt {attempt+1} failed: {e}")
+                last_error = f"{type(e).__name__}: {e}"
+                print(f"  [WARN] Gemini attempt {attempt+1} failed: {last_error}")
                 time.sleep(backoff * (2 ** attempt))
 
         # Gemini 실패 → OpenAI로 폴백
@@ -1565,7 +1567,7 @@ def call_llm(paper_text: str, model: str = DEFAULT_MODEL) -> Dict[str, Any]:
             fallback_model = "gpt-5"
             print(f"  [FALLBACK] Gemini 실패. OpenAI({fallback_model})로 재시도합니다...")
             return call_llm(paper_text, model=fallback_model)
-        raise RuntimeError("Gemini LLM call failed after retries.")
+        raise RuntimeError(f"Gemini LLM call failed after retries. Last error: {last_error}")
 
     # ── OpenAI 모델 처리 ──────────────────────────────────
     if not api_key:
@@ -1575,17 +1577,20 @@ def call_llm(paper_text: str, model: str = DEFAULT_MODEL) -> Dict[str, Any]:
     # Reasoning models (o1, o3, gpt-5 계열)
     is_reasoning_model = any(x in model.lower() for x in ["o1", "o3", "gpt-5", "gpt-o3"])
 
+    last_error = ""
+    truncated_text = text  # finish_reason=length 발생 시 자동 축소
     for attempt in range(max_retries):
         try:
             params: Dict[str, Any] = {
                 "model": model,
                 "messages": [
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": f"[문서 텍스트]\n{text}"},
+                    {"role": "user", "content": f"[문서 텍스트]\n{truncated_text}"},
                 ],
             }
             if is_reasoning_model:
-                params["max_completion_tokens"] = 16000
+                # reasoning 모델은 내부 추론에 토큰을 많이 쓰므로 충분한 여유 필요
+                params["max_completion_tokens"] = 32000
             else:
                 params["response_format"] = {"type": "json_object"}
                 params["max_completion_tokens"] = 4096
@@ -1594,22 +1599,36 @@ def call_llm(paper_text: str, model: str = DEFAULT_MODEL) -> Dict[str, Any]:
 
             resp = client.chat.completions.create(**params)
             content = (resp.choices[0].message.content or "").strip()
+            finish_reason = resp.choices[0].finish_reason
 
             if not content:
-                finish_reason = resp.choices[0].finish_reason
+                # finish_reason=length → 입력을 줄여서 출력 토큰 확보 후 재시도
+                if finish_reason == "length" and len(truncated_text) > 20000:
+                    new_len = max(20000, int(len(truncated_text) * 0.6))
+                    print(f"  [INFO] finish_reason=length → 입력 {len(truncated_text)} → {new_len}자 축소 후 재시도")
+                    truncated_text = truncated_text[:new_len]
                 raise ValueError(f"LLM이 빈 응답을 반환했습니다. finish_reason={finish_reason}")
 
             json_match = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", content)
             if json_match:
                 content = json_match.group(1).strip()
 
-            return json.loads(content)
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError as je:
+                # 응답 잘림(length) 의심 → 입력 축소 후 재시도
+                if finish_reason == "length" and len(truncated_text) > 20000:
+                    new_len = max(20000, int(len(truncated_text) * 0.6))
+                    print(f"  [INFO] JSON 잘림 의심(finish_reason=length) → 입력 {len(truncated_text)} → {new_len}자 축소 후 재시도")
+                    truncated_text = truncated_text[:new_len]
+                raise ValueError(f"JSON 파싱 실패 ({je}). content head: {content[:120]!r}")
         except Exception as e:
             if "quota" in str(e).lower():
                 raise
-            print(f"  [WARN] LLM attempt {attempt+1} failed: {e}")
+            last_error = f"{type(e).__name__}: {e}"
+            print(f"  [WARN] LLM attempt {attempt+1} failed: {last_error}")
             time.sleep(backoff * (2 ** attempt))
-    raise RuntimeError("LLM call failed after retries.")
+    raise RuntimeError(f"LLM call failed after retries. Last error: {last_error}")
 
 
 # ============================================================
