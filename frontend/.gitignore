@@ -19,3 +19,25 @@ yarn-error.log*
 dist/
 build/
 out/
+
+# 문서 파일 (PPT, PDF)
+*.pdf
+*.ppt
+*.pptx
+*.odp
+
+# 이미지 파일 (JPG, PNG, GIF 등)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+*.bmp
+*.ico
+*.webp
+
+# 기타 미디어 및 압축 파일 (선택)
+*.mp4
+*.zip
+*.tar
+*.gz
