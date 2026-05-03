@@ -1,0 +1,82 @@
+{
+  "doc_type": "patent",
+  "title": "탄성 완충층 내장 과부하 보호 행성감속기 구조",
+  "head_messages": [
+    "로봇 넘어짐·충돌 등으로 발생하는 과부하로부터 행성감속기(planetary reducer) 구동계를 보호하기 위한 내충격 구조 제안",
+    "강성 치면부와 탄성 완충부의 동축 중첩 및 변형 통공(through-hole) 설계로 충격 에너지 흡수와 위치 자복원 구현"
+  ],
+  "purpose": [
+    "사족 로봇(quadruped robot)·로봇 관절에서 발생하는 과부하 충격의 에너지 흡수와 치면 보호 구현",
+    "마찰 클러치(friction clutch) 없이 부품 수와 체적을 줄이는 내충격 감속기 실현"
+  ],
+  "prior_problems": [
+    "마찰 미끄럼식 보호는 마찰력 생성기 등 추가 부품으로 비용·체적 증가",
+    "감속기 기어에 과부하 충격이 직접 전달되어 치형 파손과 구동 불능 위험 상존"
+  ],
+  "proposed_method": [
+    {
+      "title": "강성 치면부-탄성 완충부 동축 중첩 구조",
+      "details": [
+        "외치(external gear teeth) 또는 내치(internal gear teeth) 치면은 금속 강체로 토크 전달",
+        "치면 안쪽 또는 바깥에 일정 강도의 탄성 완충층을 동축 삽입",
+        "충격 시 치면부가 축 또는 외층 대비 미세 변위를 허용해 하중 분산"
+      ]
+    },
+    {
+      "title": "변형 통공 기반 순응도 조절",
+      "details": [
+        "완충층에 변형 통공(through-hole)을 배치해 항복 전 탄성 변형 범위 확대",
+        "통공의 배열·크기로 접선(tangential)·반경(radial) 방향 강성과 감쇠 특성 조정",
+        "과부하 소멸 시 탄성 복원으로 치면부의 원위치 자복원 확보"
+      ]
+    },
+    {
+      "title": "구성 변형과 배치 옵션",
+      "details": [
+        "행성기어형(planet gear): 외치부 안쪽에 완충층을 두고 축·베어링 내외륜 측에 배치",
+        "링기어형(ring gear): 내치층 바깥에 완충권을 두고 접선 변형으로 에너지 흡수",
+        "내측·외측에 강체 보강부를 추가해 치면 정밀도와 내구성 유지"
+      ]
+    },
+    {
+      "title": "제조·체결 및 시스템 통합",
+      "details": [
+        "완충부-강체부는 나사 체결·접착·카드 결합 등으로 신뢰성 고정",
+        "재료는 폴리우레탄, 실리콘, 고무, 플라스틱 등 현장 요구에 맞춰 선택",
+        "전기모터 출력축을 태양기어(sun gear)에 직결해 로봇 관절·사족 로봇에 적용"
+      ]
+    }
+  ],
+  "improvements": [
+    "탄성 변형을 이용해 충격을 분산·흡수함으로써 기어·베어링 손상 위험 저감",
+    "동축 내장식 구조로 보호 기능을 포함하면서 부품 수와 패키징 공간 축소",
+    "완충부 모듈화로 동일 외형에서 보호 성능 튜닝 가능, 조립·정비 용이"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "CNIPA",
+    "paper_title": "An Overload-Impact-Resistant Planetary Reducer, Robot Joint and Quadruped Robot",
+    "institution": "Ltd.",
+    "doi_or_patent_no": "CN112728014A",
+    "year": "2021",
+    "month": "04"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 8,
+      "fig_number": "图1",
+      "fig_title": "行星减速器的全剖图"
+    },
+    {
+      "role": "result",
+      "page": 10,
+      "fig_number": "图4",
+      "fig_title": "行星齿轮的第二实施例的结构示意图"
+    }
+  ],
+  "figure_captions_ko": [
+    "행성 감속기의 전체 단면도",
+    "행성 감속기의 구성 폭발도"
+  ],
+  "source_pdf": "cn202011560498ap.pdf"
+}

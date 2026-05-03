@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "IOBC용 6상 FSCW SPM·IPM 탈자·열 동시최적 설계 기술",
+  "head_messages": [
+    "통합 온보드 배터리 충전기(IOBC, Integrated Onboard Battery Charger) 운용 시 6상 분수 슬롯 집중 권선(FSCW, Fractional Slot Concentrated Winding) 영구자석 동기 전동기(PMSM, Permanent Magnet Synchronous Motor) 자석 탈자와 발열 한계 규명",
+    "3차원 유한요소해석(FEA, Finite Element Analysis)·열 자기 연성과 다목표 유전 알고리즘(MOGA, Multi-Objective Genetic Algorithm)으로 12슬롯/10극 표면부착형(SPM, Surface-mounted PM) 및 매입형(IPM, Interior PM) 설계와 실증 수행"
+  ],
+  "purpose": [
+    "IOBC 운용 중 무회전 조건에서 발생하는 부분 및 불가역 탈자 메커니즘을 정량화하고 안전 운전 한계를 도출",
+    "추가 하드웨어 없이 G2V(Grid-to-Vehicle), V2G(Vehicle-to-Grid), V2H/B(Vehicle-to-Home/Building) 구현 가능한 6상 FSCW 구동 겸용 충전 모터 설계 기준 확립"
+  ],
+  "prior_problems": [
+    "3상 IOBC는 회전자 토크가 남아 추가 하드웨어가 필요하고, FSCW 고조파로 PM 탈자 위험과 손실 증가",
+    "기존 열·탈자 연구는 추진 모드 중심으로 IOBC의 정지 로터, 누설 자속, 전류 분포에 의한 PM 스트레스 반영 미흡"
+  ],
+  "proposed_method": [
+    {
+      "title": "6상 비대칭 권선 IOBC 구동 및 충전 토폴로지",
+      "details": [
+        "두 개 3상 권선 위상 분리 추진 30°, 충전 150°로 평균 토크 상쇄",
+        "권선 말단 재결선과 스위치 매트릭스(S1~S5)로 모드 전환",
+        "그리드 전류를 두 권선군에 분배해 자속 상쇄와 필터 동작 달성"
+      ]
+    },
+    {
+      "title": "MOGA 기반 다목표 전자기 설계 최적화",
+      "details": [
+        "목표함수에 충전 시 최대 자장과 보자력 비교 항 추가로 탈자 억제",
+        "자기 등가 회로(MEC, Magnetic Equivalent Circuit)로 초기 치수 산정",
+        "자극 두께, 이빨 폭, 코어백 두께, 슬롯 개구비 등 변수와 RSM 민감도 활용"
+      ]
+    },
+    {
+      "title": "3D FEA 연성 열 및 탈자 리스크 평가",
+      "details": [
+        "철손, 동손, 자석손 산출 후 TENV(Totally Enclosed Non-Ventilated) 조건 자연대류 계수로 온도 계산",
+        "SPM 상자면, IPM 모서리 등 취약 지점 Bmin 추출과 무릎점 비교",
+        "최대 자장 대 보자력 비율 기반 탈자 위험도 산정과 전류 상승 시나리오 검토"
+      ]
+    },
+    {
+      "title": "예측 전류 제어 기반 G2V 및 V2G 실증",
+      "details": [
+        "예측 전류 제어로 xy 성분 극대화, dq에서 q축 영점으로 역률 1 달성",
+        "위상 동기 루프(PLL, Phase-Locked Loop)로 αβ 동기와 제로시퀀스 억제",
+        "15 kW IPM과 40 kW 인버터, 그리드·배터리 에뮬레이터로 실험 검증"
+      ]
+    }
+  ],
+  "improvements": [
+    "IPM은 140 ℃에서도 Bmin 0.6 T 초과 유지, SPM은 0.43 T로 무릎점 이하로 저하되어 IPM의 고온 내성 확인",
+    "100 ℃에서 IPM 탈자 위험도 전 등급 50% 미만, SPM은 50 kW 80%, 115~125 kW 95% 초과로 고위험",
+    "충전 시 그리드 전류가 상전류의 약 1.93배, 위상 전류 THD(Total Harmonic Distortion) 약 12.3%, 역률 1 유지"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE",
+    "paper_title": "Demagnetization and Thermal Analysis of Six-Phase Permanent Magnet Motor-based Integrated Onboard EV Charging",
+    "institution": "King Abdullah University of Science",
+    "doi_or_patent_no": "Demagnetization and Thermal Analysis of Six-Phase Permanent Magnet Motor-based Integrated Onboard EV Charging",
+    "year": "2024",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 3,
+      "fig_number": "Fig. 1",
+      "fig_title": "Six-phase IOBC schematic and phasor diagram"
+    },
+    {
+      "role": "result",
+      "page": 6,
+      "fig_number": "Fig. 16",
+      "fig_title": "Demagnetization risk comparison in motors of different power ratings at different temperatures under charging"
+    }
+  ],
+  "figure_captions_ko": [
+    "6상 IOBC 회로 개략도와 페이저 다이어그램",
+    "충전 시 온도·정격별 모터 탈자 위험 비교"
+  ]
+}

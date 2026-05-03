@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "경부하·교차부하 대응 온보드차저-보조전원 제어 기술",
+  "head_messages": [
+    "EV(Electric Vehicle)용 OBC(Onboard Charger)·APM(Auxiliary Power Module) 통합 충전에서 경부하·교차부하 시 ZVS(Zero-Voltage Switching) 상실과 LV(Low Voltage) 출력 제약 문제 해결 목적",
+    "VF(Variable Frequency)↔FF(Fixed Frequency) 전환과 전력 히스테리시스, TSH 기반 HV(High Voltage) 전압·TPS 기반 LV 전압 분리 제어로 고효율과 무진동 전환 구현"
+  ],
+  "purpose": [
+    "경부하에서도 LV와 HV를 독립적으로 조절해 동시 충전 품질과 시스템 신뢰성 확보",
+    "교차부하 조건에서 ZVS 상실과 과도 리플을 억제하며 제어 안정성 유지"
+  ],
+  "prior_problems": [
+    "VF 상승 시 DC버스 스위치 ZVS 상실과 고주파 스위칭 손실 증가로 소자 발열과 손상 위험",
+    "버스트 모드는 두 포트 동시 전압 리플 증가·EMI·가청소음 유발로 교차부하 독립 제어 불가"
+  ],
+  "proposed_method": [
+    {
+      "title": "이중 모드 제어와 임계 전력 결정",
+      "details": [
+        "VF에서 SRC(Series Resonant Converter)와 지연시간 제어로 HV 전압 제어",
+        "DSP(Digital Signal Processor) DPWM으로 게이트 펄스 생성·동기화",
+        "PTH는 fswmax 170 kHz에서 LV 1 kW 전달 한계와 ZVS 경계로 산정"
+      ]
+    },
+    {
+      "title": "경부하 고정주파 제어와 포트 분리 제어",
+      "details": [
+        "fsw 40 kHz로 고정해 스위칭 손실 억제 및 소자 발열 방지",
+        "HV는 두 스위치 단락시간 TSH로 전압 제어하며 SH2·SH3는 정류 동작",
+        "LV는 DAB(Dual Active Bridge) 구조에서 TPS로 독립 제어"
+      ]
+    },
+    {
+      "title": "무진동 모드 전환 전력 히스테리시스",
+      "details": [
+        "FF 모드 최대 단락시간 Tsmax를 필요값보다 약간 크게 설정",
+        "동일 출력에서 VF fsmax와 FF Tsmax 일치시켜 VF↔FF 전환 시 진동 방지",
+        "히스테리시스 대역 약 400 W 시뮬레이션, 267 W 실험 확보"
+      ]
+    },
+    {
+      "title": "전환 시 비선형 피드포워드 보상",
+      "details": [
+        "전환 순간 VEA(HV)에 상수 K를 곱해 목표 정상상태 근접값으로 설정",
+        "K는 전환 후 정상 VEA(HV)와 임계 VEATH의 비로 산정해 룩업 적용",
+        "VHV 변동 0.2 V, VLV 변동 0.45 V로 오버·언더슈트 저감"
+      ]
+    }
+  ],
+  "improvements": [
+    "경부하에서 VBus 400 V, VHV 370 V, VLV 13.8 V, PLV 240 W 조건에서 효율 96.4%(PHV 2.67 kW)와 94.4%(PHV 약 550 W) 달성",
+    "잘못된 Tsmax로 VF↔FF 진동 시 HV·LV 리플 1.4 V·0.6 V 발생을 전력 히스테리시스로 제거하고 전환을 1주기 내 완료",
+    "전환 시 K 적용으로 VHV 오버슈트 1.3 V→0.2 V, 언더슈트 2.5 V→0.2 V, 실험 히스테리시스 대역 약 267 W 확보"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Applied Power Electronics Conference and Exposition (APEC)",
+    "paper_title": "Light-Load and Cross-Load Control of Integrated OBC and APM for Electric Vehicle Applications",
+    "institution": "Delta Electronics (Americas) Ltd.",
+    "doi_or_patent_no": "10.1109/APEC43580.2023.10131194",
+    "year": "2023",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 1918,
+      "fig_number": "Fig. 6",
+      "fig_title": "Block diagram of control of integrated OBC and APM in charging mode of operation"
+    },
+    {
+      "role": "result",
+      "page": 1919,
+      "fig_number": "Fig. 12",
+      "fig_title": "Key experimental waveforms when control transitions from VF to FF mode at VBUS =400 V, VHV =370 V, PHV =2.8 kW, VLV = 13.6 V, PLV=574W"
+    }
+  ],
+  "figure_captions_ko": [
+    "충전 모드에서 통합 OBC·APM 제어 블록도",
+    "VBUS 400V 조건의 VF→FF 전환 시 주요 실험 파형"
+  ]
+}

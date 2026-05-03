@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "CM 전류 공진 모델링·정량 억제 설계 방법",
+  "head_messages": [
+    "올인원 모터 구동 모듈의 공통모드(CM, Common-Mode) 전류 공진으로 저하된 전자기적 양립성(EMC, Electromagnetic Compatibility) 문제 규명과 억제 설계 정립",
+    "전류 진동 주파수 기반 버스바 기생 추출과 PEEC-GA로 MPBC 고주파 모델을 구축하고, 민감도 분석과 전자기 간섭(EMI, Electromagnetic Interference) Y 커패시터 정량 설계로 공진 억제 달성"
+  ],
+  "purpose": [
+    "150 kHz~30 MHz 대역에서 올인원 모듈의 CM 전류 공진 원인 규명과 지배 경로 식별",
+    "추가 하드웨어 최소화로 규격 적합을 만족하는 EMI 정량 설계 절차 구현"
+  ],
+  "prior_problems": [
+    "시간영역·전압진동 방식은 절차가 번거롭고 고주파 기생의 영향 반영이 미흡",
+    "다포트 버스 커패시터(MPBC, Multiport Bus Capacitor)의 포트 임피던스 비대칭과 내장 커패시터 추출 부재"
+  ],
+  "proposed_method": [
+    {
+      "title": "전류 진동 주파수 기반 DC 버스바 기생 인덕턴스 추출",
+      "details": [
+        "스텝 구동으로 공진 전류 스펙트럼을 계측해 공진 주파수로 버스바 인덕턴스 산출",
+        "DC 커패시터·공심 인덕터를 고주파 RLC로 모델링하고 등가 직렬 인덕턴스(ESL, Equivalent Series Inductance)와 접합 커패시턴스를 포함",
+        "두 계측 지점의 공진 주파수 일치 확인으로 간섭 배제 및 추정 오차 2.8% 검증"
+      ]
+    },
+    {
+      "title": "PEEC-GA 기반 MPBC 고주파 등가 모델링",
+      "details": [
+        "PEEC(Partial Element Equivalent Circuit)로 내부 버스바를 분할해 각 구간 기생 인덕턴스·커패시턴스 추출",
+        "GA(Genetic Algorithm)로 입력·출력 임피던스 실측을 적합해 내장 커패시터의 고주파 RLC 매개변수 식별",
+        "다포트 임피던스 비대칭을 반영한 핀별 RL 모델과 버스 구간 네트워크로 전체 MPBC 모델 구성"
+      ]
+    },
+    {
+      "title": "전체 EMI 결합 모델 구축 및 시뮬레이션 검증",
+      "details": [
+        "LISN(Line Impedance Stabilization Network)·DC 케이블·EMI(Electromagnetic Interference) 필터·모터를 CM와 DM 분해 모델로 결합",
+        "IGBT 모듈 접지 커패시턴스와 버스바 기생을 포함해 CM 전류 주파수 응답을 해석",
+        "실측 스펙트럼과 비교해 16 MHz·28 MHz 공진 재현으로 모델 정확도 검증"
+      ]
+    },
+    {
+      "title": "CM 공진 경로 민감도 분석과 Y 커패시터 정량 설계",
+      "details": [
+        "민감도 분석으로 10~30 MHz에서 주 공진 루프를 추출하고 등가 CM 회로로 단순화",
+        "삽입 손실 목표와 누설 전류 한계를 제약으로 Y 커패시터 용량을 산정",
+        "고유 ESL을 고려해 배치 지점을 고속 충전 케이블과 MPBC 접점으로 선정"
+      ]
+    }
+  ],
+  "improvements": [
+    "버스바 기생 인덕턴스 23.46 nH 추출, 임피던스 애널라이저 대비 상대 오차 2.8% 달성",
+    "16 MHz·28 MHz 공진 경로 규명과 Y 커패시터 설계로 삽입 손실 20 dB 이상 확보",
+    "Y 커패시터 4.7 nF 두 개 적용으로 누설 전류 제약 90 nF 이하 충족 및 CISPR 25 전도·복사 규격 만족"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Electromagnetic Compatibility",
+    "paper_title": "Modeling and Suppression of Common-Mode Current Resonance in an All-in-One Motor Drive Module of Electric Vehicle",
+    "institution": "Zhejiang University",
+    "doi_or_patent_no": "10.1109/TEMC.2024.3503070",
+    "year": "2025",
+    "month": "April"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 482,
+      "fig_number": "Fig. 7",
+      "fig_title": "Overall EMI coupling model of the all-in-one motor drive module."
+    },
+    {
+      "role": "result",
+      "page": 484,
+      "fig_number": "Fig. 16",
+      "fig_title": "Spectrum envelopes of simulation and measurement results."
+    }
+  ],
+  "figure_captions_ko": [
+    "올인원 모터 구동 모듈의 전체 EMI 결합 모델",
+    "복사 EMI 시험 배치 구성도"
+  ]
+}

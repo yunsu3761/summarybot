@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "구동부 재사용 듀얼 인버터 통합 3상 CSC 충전 시스템",
+  "head_messages": [
+    "구동 인버터·모터·냉각을 재사용하는 전류원 컨버터(CSC, Current Source Converter) 기반 3상 통합 충전 아키텍처 확립",
+    "듀얼 인버터 인터리빙·CC-CV 제어·PR 전류 제어로 PF>0.99, 효율 93%, IEC 61000-3-12 충족과 무토크 충전 달성"
+  ],
+  "purpose": [
+    "3상 그리드 직결 CSC로 구동부 재사용해 고속 충전과 인프라 비용 절감 달성",
+    "듀얼 인버터·오픈권선 PMSM으로 무토크 충전과 두 ESU 동시 CC-CV 구현"
+  ],
+  "prior_problems": [
+    "전압원 컨버터(VSC, Voltage Source Converter) 기반 통합 충전은 권선 재구성·브레이크 필요로 복잡·비용 증가",
+    "과거 CSC는 SCR/GTO 저속 스위칭으로 DC 링크 리플 과다로 모터 누설 인덕턴스만으로 억제 한계"
+  ],
+  "proposed_method": [
+    {
+      "title": "CSC 기반 3상 AC/DC 변환과 CSVM 구동",
+      "details": [
+        "3상 LC 필터 후단에 전류원 컨버터 구현, DC 링크는 모터 누설 인덕턴스 활용",
+        "전류 공간 벡터 변조(CSVM, Current Space Vector Modulation)로 그리드 전류 정현파 추종 및 역률 제어",
+        "스위칭 시퀀스 오버랩 시간 관리로 스위치 스트레스와 전류 연속성 확보"
+      ]
+    },
+    {
+      "title": "듀얼 인버터·오픈권선 PMSM 기반 DC/DC 구성",
+      "details": [
+        "듀얼 인버터가 두 에너지 저장 장치(ESU, Energy Storage Unit)를 개별 포트로 연결해 혼합 매체 수용",
+        "평균 모델 기반 PWM로 각 권선 전압·전류를 독립 제어해 충전 전류 형상화",
+        "오픈권선 PMSM(Permanent Magnet Synchronous Motor) 적용으로 충전 중 DC 균형 전류만 흐름"
+      ]
+    },
+    {
+      "title": "인터리빙 스위칭으로 DC 링크·권선 리플 저감",
+      "details": [
+        "인버터 간 위상천이와 권선 간 위상천이를 조합한 인터리빙 적용",
+        "CSC와 듀얼 인버터 스위칭 주기 비 조정으로 리플 상쇄 조건 만족",
+        "유효 스위칭 주파수 상승 효과로 필터 소형화와 열 스트레스 저감"
+      ]
+    },
+    {
+      "title": "그리드 전류·CC-CV·밸런싱 통합 제어",
+      "details": [
+        "비례-공진(PR, Proportional-Resonant) 그리드 전류 내측 루프와 비례-적분(PI, Proportional-Integral) 전력 외측 루프 구성",
+        "정전류·정전압(CC-CV, Constant-Current Constant-Voltage) 중첩 제어로 2개 ESU에 독립 CC-CV 충전 수행",
+        "권선 전류 밸런스·ESU 충전 상태(SoC, State of Charge) 밸런스 PI 제어로 모터 토크 억제와 에너지 분배"
+      ]
+    }
+  ],
+  "improvements": [
+    "10kW 프로토타입에서 전력인자(PF, Power Factor) >0.99 달성, PR 전류 제어와 CSVM으로 그리드 전류 정현파화",
+    "정격 전력에서 전체 효율 93% 달성, 듀얼 인버터 인터리빙으로 스위칭·전도 손실 분산",
+    "IEC 61000-3-12 그리드 전류 고조파 한계 충족, LC 필터와 전류 제어로 규격 대응"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "University of Toronto",
+    "paper_title": "A 3-Phase Electric Vehicle Charger Integrated with Dual Inverter Drive",
+    "institution": "University of Toronto",
+    "doi_or_patent_no": "A 3-Phase Electric Vehicle Charger Integrated with Dual Inverter Drive",
+    "year": "2020",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "page": 8,
+      "fig_number": "Figure 1.6",
+      "fig_title": "Overview of proposed topology for CSC-based 3-phase EV charger integrated with dual inverter drive.",
+      "role": "concept"
+    },
+    {
+      "page": 77,
+      "fig_number": "Figure 4.17",
+      "fig_title": "Efficiency of the prototype charging at various power levels.",
+      "role": "result"
+    }
+  ],
+  "figure_captions_ko": [
+    "AC 레벨1·레벨2/급속 통합 충전 개요도",
+    "슈퍼커패시터 ESU 기반 프로토타입 구성도"
+  ]
+}

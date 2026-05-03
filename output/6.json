@@ -1,0 +1,87 @@
+{
+  "doc_type": "paper",
+  "title": "제로시퀀스 공진 기반 듀얼 인버터 T2A 변환 기술",
+  "head_messages": [
+    "보조전원모듈(APM) 제거를 목표로 듀얼 인버터 구동계의 제로시퀀스를 이용해 주행배터리에서 보조배터리로 전력 변환을 통합",
+    "반송파 위상차 제어와 공진 L-C·변압기 경로로 스위칭주파수 전력을 전송해 추가 스위칭 손실 없이 주행·정지 모두에서 안정적 T2A 구현"
+  ],
+  "purpose": [
+    "별도 APM 없이 구동 인버터만으로 HV→LV T2A 전력 변환을 실현",
+    "주행 토크 제어에 간섭 없이 실시간 보조배터리 전력 제어 달성"
+  ],
+  "prior_problems": [
+    "전용 APM은 부품·무게·비용 증가와 추가 스위칭 손실 유발",
+    "OBC 통합 방식은 충전 중 동시 운전 제약과 OBC 경로 손실 증가 문제"
+  ],
+  "proposed_method": [
+    {
+      "title": "듀얼 인버터 제로시퀀스 전력 경로 구성",
+      "details": [
+        "두 배터리 음극에 직렬 보상 커패시터와 변압기 1차를 접속해 공통모드 전류 경로 형성",
+        "2차는 다이오드 정류기와 선택적 CL 필터로 LV 배터리에 연계",
+        "3상 전류의 합을 변압기 1차 전류로 유도해 스위칭 성분만을 이용"
+      ]
+    },
+    {
+      "title": "스위칭 주파수 공진 설계와 변압기 사양",
+      "details": [
+        "변압기 누설 인덕턴스와 모터 제로시퀀스 인덕턴스를 커패시터로 상쇄해 공진 형성",
+        "공진 주파수를 PWM 스위칭 주파수에 맞춰 루프 임피던스 최소화",
+        "권선비는 배터리 전압과 최대 변조율 조건에서 요구 전압을 충족하도록 선정"
+      ]
+    },
+    {
+      "title": "반송파 위상차 기반 T2A 출력 제어",
+      "details": [
+        "상단·하단 인버터 PWM 반송파 사이 위상차를 조절해 제로시퀀스 기본파 전압 크기 제어",
+        "PI 제어기로 LV 전류 오차를 전압 요구치로 변환 후 위상차로 매핑",
+        "입력 포화와 저대역 폭 설계로 구동 PWM과의 상호 간섭을 억제"
+      ]
+    },
+    {
+      "title": "실용 이슈 반영 및 필터링",
+      "details": [
+        "DC링크 대지 커패시터와 권선 대지 커패시터의 전압 분담을 고려해 설계",
+        "고조파 전류 저감을 위해 정류기 뒤 CL 필터 적용, 공심 인덕터로 경량화",
+        "베어링 전류는 기존 3상 구동과 동등 이하가 되도록 제로시퀀스 전압을 제한"
+      ]
+    }
+  ],
+  "improvements": [
+    "추가 스위칭 동작 없이 동시 운전 달성, 모터 권선 추가 rms전류 2.84A로 정격 200A의 1.5% 미만",
+    "실험용 1.2kW 원형 구현, LV 12V에서 100A 출력과 10kHz 공진 전류 파형 실증",
+    "APM 제거로 전용 스위치·자기소자·필터 부품 축소에 따른 비용·중량 절감"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Power Electronics",
+    "paper_title": "Auxiliary Power Module Elimination in EVs Using Dual Inverter Drivetrain",
+    "institution": "University of Toronto",
+    "doi_or_patent_no": "10.1109/TPEL.2022.3176240",
+    "year": "2022",
+    "month": "October"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 12515,
+      "fig_number": "Fig. 4",
+      "fig_title": "Proposed circuitry addition to the drivetrain for T2A operation."
+    },
+    {
+      "role": "result",
+      "page": 12519,
+      "fig_number": "Fig. 11",
+      "fig_title": "Simulation results of T2A operation during acceleration of drivetrain."
+    }
+  ],
+  "figure_captions_ko": [
+    "듀얼 인버터 구동계에 T2A 동작을 구현하기 위해 추가되는 변압기·정류기, 보상 커패시터 Cr, 전해 커패시터–공심 인덕터 CL 필터의 통합 구성",
+    "T2A 운전의 가속 구간 검증에 활용되는 기존 구동계와 영구자석 동기전동기(PMSM)로 구성된 평가 플랫폼"
+  ],
+  "_meta_doc_type": "paper",
+  "_meta_doi": "10.1109/TPEL.2022.3176240",
+  "_meta_patent_no": "",
+  "_meta_institution": "University of Toronto",
+  "_meta_year": "2022",
+  "source_pdf": "9156.pdf"
+}

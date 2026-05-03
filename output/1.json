@@ -1,0 +1,87 @@
+{
+  "doc_type": "paper",
+  "title": "LLC·PSFB 공통 다리·적응 DC링크 통합 OBC-APM 기술",
+  "head_messages": [
+    "APM(Auxiliary Power Module)과 OBC(On-Board Charger)를 공통 스위치 다리와 제어 통합으로 동시 운전하며 전 구간 ZVS(Zero-Voltage Switching) 확보",
+    "LLC(Inductor-Inductor-Capacitor)-PSFB(Phase-Shift Full Bridge) 공용 다리와 적응 DC링크로 전력 상쇄·ZVS 에너지 확장 달성, 효율·부피·비용 동시 개선"
+  ],
+  "purpose": [
+    "OBC와 APM 동시 운전 시 별도 릴레이·보조 회로 없이 독립 제어와 전 스위치 ZVS 확보",
+    "EV 전원부의 효율 향상과 파워 밀도·비용 목표 달성을 위한 통합 충전기 구조 구현"
+  ],
+  "prior_problems": [
+    "기존 통합기는 동시 운전 불가 또는 릴레이·추가 회로 요구로 신뢰성과 효율 저하",
+    "다권선 변압기 기반은 누설 인덕턴스 설계 복잡·높이 증가로 부피·비용 증가"
+  ],
+  "proposed_method": [
+    {
+      "title": "공통 고전압측 다리 기반 OBC-APM 토폴로지 통합",
+      "details": [
+        "LLC OBC의 2차측 다리와 PSFB APM의 1차측 다리를 공용 스위치 다리로 결합",
+        "동시 모드에서 공용 다리를 PSFB 지연 다리로 구동해 전류 상쇄와 ZVS 유도",
+        "OBC와 APM은 각자 전압·전류 루프로 독립 제어하여 상호 간섭 최소화"
+      ]
+    },
+    {
+      "title": "적응형 DC링크 제어로 LLC 양방향 운전 적용",
+      "details": [
+        "전력 흐름 방향별 DC링크 기준 전압을 달리 설정해 LLC를 거의 단위 이득 근방 운용",
+        "순방향은 약 단위 이득, 역방향은 피크가 단위 이득을 넘지 않게 약간 감압 설정",
+        "좁은 주파수 가변으로 손실 저감, CLLLC 대신 단순한 LLC로 양방향 달성"
+      ]
+    },
+    {
+      "title": "동시 충전·V2G 운전의 ZVS 확보 메커니즘",
+      "details": [
+        "동시 충전 시 LLC 2차전류와 PSFB 1차전류의 반대 위상으로 공용 다리 전류 감소",
+        "지연 다리의 ZVS 에너지를 LLC 전류로 보강해 경부하에서도 ZVS 유지",
+        "V2G(Vehicle-to-Grid) 시 공용 다리 전류 증대하나 LLC 역동작으로 ZVS 에너지 증대"
+      ]
+    },
+    {
+      "title": "APM 단독·고장 완화 운전 로직",
+      "details": [
+        "중대부하는 PSFB 정상 구동, 경부하는 LLC 1차 스위치를 대각 구동해 여자전류 주입",
+        "여자전류로 지연 다리 ZVS 전류 확보, 전 구간 ZVS 달성",
+        "공용 다리 개방고장 시 LLC 1차 단락 재구성으로 부분 출력과 ZVS 유지"
+      ]
+    }
+  ],
+  "improvements": [
+    "동시 충전 모드 효율 최대 97.81% 달성, 분리형 대비 평균 약 0.5%p 향상",
+    "APM 단독 모드 피크 효율 95.46% 달성, 경부하 효율 분리형 대비 최대 2%p 향상",
+    "스위치 수·입력 필터 공유로 부피 17%·비용 19% 절감, 1kW 시 도통손 66% 감소"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Power Electronics",
+    "paper_title": "An Effective Integration of APM and OBC With Simultaneous Operation and Entire ZVS Range for Electric Vehicle",
+    "institution": "Seoul National University of Science",
+    "doi_or_patent_no": "10.1109/TPEL.2021.3063931",
+    "year": "2021",
+    "month": "9"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 10345,
+      "fig_number": "Fig. 4",
+      "fig_title": "Schematic circuit of the proposed integrated charger"
+    },
+    {
+      "role": "result",
+      "page": 10351,
+      "fig_number": "Fig. 21",
+      "fig_title": "(a) Measured efficiency when VHV=330V, VLV=13V, and PAPM=0.4kW. (b) Loss analysis when Pcharging=2.5kW during the simultaneous mode."
+    }
+  ],
+  "figure_captions_ko": [
+    "LLC 공진형 OBC와 PSFB 기반 APM의 고전압측 공통 레그를 공유하고 자화전류·전류 상쇄를 활용해 동시 운전과 전 영역 ZVS 동작을 구현하는 통합 충전기 회로 구성",
+    "동시 충전 모드에서 VHV=330V, VLV=13V, PAPM=0.4kW 조건의 효율 곡선과 2.5kW 충전 시 손실 분해를 통해 공통 레그 도통 손실 저감 및 손실 지배 항목을 입증하는 성능 검증 결과"
+  ],
+  "_meta_doc_type": "paper",
+  "_meta_doi": "10.1109/TPEL.2021.3063931",
+  "_meta_patent_no": "",
+  "_meta_institution": "University of Science and Technology",
+  "_meta_year": "2021",
+  "source_pdf": "10627.pdf"
+}

@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "PIC 제어 양방향 DC-DC·스마트 BMS EV 전력관리 시스템",
+  "head_messages": [
+    "EV 가속·회생 제동에서 배터리–모터 양방향 전력 제어와 상태충전(SOC, State of Charge)·상태건강(SOH, State of Health) 실시간 추적으로 안전 운용 달성",
+    "PIC16F72와 배터리 관리 시스템(BMS, Battery Management System) 기반 부스트/벅 로직·임계치 자동화로 45°C 팬 구동·23 V 발전기 기동을 수행하고 90–93% 효율 확보"
+  ],
+  "purpose": [
+    "양방향 DC-DC 컨버터와 임베디드 제어로 EV 가속·회생 제동 시 고효율 전력 변환과 안전 운용 구현",
+    "쿨롱 카운팅(Coulomb counting) SOC·용량 열화 기반 SOH 추정으로 충방전 스케줄 최적화"
+  ],
+  "prior_problems": [
+    "단방향 충전 구조는 회생 제동 에너지 회수 불가하고 수동 제어로 과충전·과방전 위험 상존",
+    "정교한 SOC·SOH 실시간 추정 부재로 열폭주 대응 지연 및 변환 효율 저하"
+  ],
+  "proposed_method": [
+    {
+      "title": "양방향 DC-DC 토폴로지와 PWM 제어",
+      "details": [
+        "부스트·벅 동작으로 배터리→모터(B2M)·모터→배터리(M2B) 전력 흐름 구현",
+        "전류·전압 피드백을 이용해 펄스폭변조(PWM, Pulse Width Modulation) 듀티 제어 적용",
+        "동기 스위칭과 적정 인덕터·소자 선정으로 도통·스위칭 손실 최소화"
+      ]
+    },
+    {
+      "title": "PIC16F72 기반 실시간 에너지 관리",
+      "details": [
+        "1 Hz 주기로 전압·전류·온도 샘플링해 상태 변화를 상시 감시",
+        "액정표시장치(LCD, Liquid Crystal Display)·릴레이·팬·발전기 인터페이스 제어",
+        "인터럽트 기반 임계치 처리와 상태 머신으로 모드 전환 안정화"
+      ]
+    },
+    {
+      "title": "SOC·SOH 추정과 임계치 자동화 로직",
+      "details": [
+        "전류 누적 방식의 쿨롱 카운팅으로 SOC 산출해 충방전 한계 설정",
+        "정격 대비 가용용량 비교로 SOH 계산해 가혹 사이클 억제",
+        "45°C 이상 팬 자동 구동·23 V 미만 발전기 기동·28 V 근접 시 충전 차단"
+      ]
+    },
+    {
+      "title": "V2G 대비 아키텍처와 확장성",
+      "details": [
+        "AC-DC 전단과 양방향 DC-DC 결합으로 차량-그리드(V2G, Vehicle-to-Grid) 경로 준비",
+        "그리드 인터페이스·동기화 모듈은 미구현이나 모듈러 확장 용이",
+        "고속 데이터·통신 필요 시 마이크로컨트롤러(MCU, Microcontroller Unit) 상향 전환 가능"
+      ]
+    }
+  ],
+  "improvements": [
+    "변환 효율 90–93%(실험), 94.2%(이론)로 근접 일치하며 스위칭 안정성 확인",
+    "고전류 구간 45°C 초과 시 팬 동작으로 배터리 온도 40°C 이하 복귀",
+    "23 V 저전압 자동 발전기 기동 및 약 28 V 도달 시 충전 자동 종료로 과충전 방지"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "International Journal of Power Electronics and Drive System (IJPEDS)",
+    "paper_title": "Bidirectional power converter for electrical vehicle with battery charging and smart battery management system",
+    "institution": "MLR Institute of Technology",
+    "doi_or_patent_no": "10.11591/ijpeds.v16.i4.pp2592-2604",
+    "year": "2025",
+    "month": "12"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 2595,
+      "fig_number": "Figure 2",
+      "fig_title": "Block diagram for a bidirectional power converter for EV with battery charging and smart BMS"
+    },
+    {
+      "role": "result",
+      "page": 2600,
+      "fig_number": "Figure 6",
+      "fig_title": "SOC and SOH variation during battery discharging over time"
+    }
+  ],
+  "figure_captions_ko": [
+    "EV 양방향 전력변환기·배터리 충전·스마트 BMS 블록도",
+    "배터리 방전 중 SOC·SOH 시간 변화"
+  ]
+}

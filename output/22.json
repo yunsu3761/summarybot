@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "자기 분리 회로·다기능 브리지 일체형 온보드 차저·무선수전 토폴로지",
+  "head_messages": [
+    "온보드 차저(OBC, On-Board Charger)와 무선 전력 전송(WPT, Wireless Power Transfer)을 단일 통합 아키텍처로 구현해 EV(Electric Vehicle) 충전 비용·체적 절감",
+    "자기 분리 자기회로와 다기능 전력 브리지 재사용으로 모드 간 상호 간섭 차단과 고효율 ZVS 기반 구동 달성"
+  ],
+  "purpose": [
+    "OBC와 WPT를 전기적·자기적으로 분리된 단일 하드웨어로 통합",
+    "추가 스위치 없이 안전한 모드 전환과 고효율 충전을 실현"
+  ],
+  "prior_problems": [
+    "모드 비분리로 OBC 동작 시 WPT 코일 전류 유발 및 EMI·과전압 위험",
+    "기계식 스위치 의존 구조의 도통 손실 증가와 비용·신뢰성 저하"
+  ],
+  "proposed_method": [
+    {
+      "title": "다기능 전력 브리지 재사용 구조",
+      "details": [
+        "HV 측 단일 액티브 브리지를 OBC와 WPT가 완전 공유하도록 구성",
+        "두 전압 배가 정류기를 병렬로 묶어 HV DC 링크 공유",
+        "WPT에서는 두 하프 브리지를 능동 정류기로 재사용"
+      ]
+    },
+    {
+      "title": "자기 분리 회로와 변압기 직렬 연결",
+      "details": [
+        "1차를 직렬, 2차를 각각 정류기에 연결한 이중 변압기 구성",
+        "2차 권선 점표시 단자에 Rx 코일 접속해 서로 반대 전압 형성",
+        "WPT 시 1차 브리지 AC단 전압을 거의 0으로 만들어 충전 차단"
+      ]
+    },
+    {
+      "title": "모드별 스위칭 제어 및 EMI 억제",
+      "details": [
+        "OBC는 PFM(Pulse-Frequency Modulation)과 위상천이 제어 병행",
+        "S5·S7 동상, S6·S8 보상 구동으로 Rx 단자 전압 동일화",
+        "OBC 200kHz, WPT 85kHz로 임피던스 분리해 Rx 유도전류 최소화"
+      ]
+    },
+    {
+      "title": "파라미터 및 공진 네트워크 설계",
+      "details": [
+        "DBSRC(Series-Resonant Dual-Active Bridge) 공진 100kHz, 스위칭 150~250kHz 설정",
+        "LCC-S(Inductor-Capacitor-Capacitor-Series) 보상 설계와 L1 튜닝으로 영전압 스위칭(ZVS, Zero-Voltage Switching) 달성",
+        "전압 배가 커패시터를 DC 링크·직류차단 겸용으로 설계해 용량 확대"
+      ]
+    }
+  ],
+  "improvements": [
+    "1.5kW에서 OBC 피크 효율 97%, WPT 피크 효율 92% 달성",
+    "OBC 모드 Rx 코일 단간 전압 거의 0V, WPT 시 OBC 1차 커패시터 전압 1V 이하로 디커플링 검증",
+    "HV 측 단일 액티브 브리지 채택으로 부품 수 감소에 따른 체적·비용 저감 및 손실 경로 축소"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "2025 IEEE Wireless Power Technology Conference and Expo (WPTCE)",
+    "paper_title": "An on Board Charger and Wireless Receiver Integrated Topology Based on Decoupled Magnetic Circuit and Multifunction Power Bridge",
+    "institution": "Shanghai Jiao Tong University",
+    "doi_or_patent_no": "10.1109/WPTCE62521.2025.11062164",
+    "year": "2025",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 1,
+      "fig_number": "Fig.1",
+      "fig_title": "Block diagram of the conventional WPT and OBC integration; Block diagram of the proposed integrated topology based on decoupled magnetic circuit and multifunction power bridge"
+    },
+    {
+      "role": "result",
+      "page": 3,
+      "fig_number": "Fig.5",
+      "fig_title": "Key waveforms of OBC and WPT operation mode"
+    }
+  ],
+  "figure_captions_ko": [
+    "기존 WPT·OBC 통합과 탈결합 자기회로·다기능 브리지 기반 제안 통합 토폴로지 블록도",
+    "OBC 및 WPT 동작 모드 핵심 파형"
+  ]
+}

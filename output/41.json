@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "T형 3레벨 제로·미디엄 변조·FSBB 동기 스위칭 전기차 충전 시스템",
+  "head_messages": [
+    "전기차(EV, Electric Vehicle) 고출력 무절연 충전에서 공통 모드 전압(CMV, Common Mode Voltage)과 누설 전류 저감을 통한 안전성·소형화 달성",
+    "T형 3레벨에서 제로·미디엄 벡터 기반 공간 벡터 변조(SVM, Space Vector Modulation)와 4스위치 벅‑부스트(FSBB, Four‑Switch Buck‑Boost) 동기 스위칭으로 CMV 상쇄 및 누설 전류 대폭 저감"
+  ],
+  "purpose": [
+    "무절연 구조에서 인체 안전 기준을 만족하도록 CMV와 접지 누설 전류를 최소화",
+    "추가 하드웨어 없이 변조·스위칭 전략만으로 광범위 배터리 전압대 충전 제어 구현"
+  ],
+  "prior_problems": [
+    "선로주파 변압기·고주파 변압기는 비용·부피·손실 부담이 크며 무절연 대안은 CMV 유발로 누설 전류와 EMI 문제가 심각",
+    "기존 SVM 기반 감쇄법은 피크·RMS만 낮추거나 필터·보조회로를 추가해 비용·복잡도·효율 저하 유발"
+  ],
+  "proposed_method": [
+    {
+      "title": "공통 모드 등가모델(CEM) 도출",
+      "details": [
+        "PFC·FSBB 각 스테이지의 스위치 노드와 접지 기생용량을 포함한 CM 경로 모델화",
+        "DC 링크 커패시터의 고주파 저임피던스를 반영해 CM 해석 단순화",
+        "삼상 병렬 기생을 집약한 등가 회로로 CMV‑누설 전류 상관관계 정식화"
+      ]
+    },
+    {
+      "title": "T형 3레벨 PFC의 제로·미디엄(ZM) 벡터 변조",
+      "details": [
+        "CMV가 0인 1개 제로 벡터와 6개 미디엄 벡터만 선택해 기준 전압 합성",
+        "두 상을 반대 방향 동시 전환하여 dv/dt를 상쇄하고 CMV 순간 변화를 제거",
+        "최근접 3벡터 합성으로 듀티를 산출하며 DC 링크 활용도는 약 86.96%로 설계"
+      ]
+    },
+    {
+      "title": "FSBB 대칭 동기 스위칭 기반 CMV 상쇄",
+      "details": [
+        "S1·S4 동시 온, S2·S3 동시 온의 대칭 구동으로 두 스위치 dv/dt를 반상향 맞춤",
+        "연속전도(CCM)와 임계전도(CrCM)에서 전환 동기화로 접지 경로 전류 상쇄",
+        "비동기 또는 불연속전도(DCM) 시 상쇄 저하를 방지하도록 듀티·타이밍 제어"
+      ]
+    },
+    {
+      "title": "SiC 기반 프로토타입 구현 및 폐루프 제어",
+      "details": [
+        "탄화규소(SiC, Silicon Carbide) 소자와 LCL 필터로 실장해 고속 스위칭 검증",
+        "전단 PFC는 단위 역률 제어, 후단 FSBB는 전압 지령 추종으로 양방향 운전",
+        "PLECS·LTspice 시뮬레이션과 실험으로 누설 전류·CMV 스펙트럼 검증"
+      ]
+    }
+  ],
+  "improvements": [
+    "접지 누설 전류 rms 107.9 mA 대비 16.9 mA로 84.33% 감소, IEC 61851‑1·UL 2202의 30 mA 기준 만족",
+    "CMV 노이즈 스펙트럼 최대 25.2 dB 저감, 고주파 EMI 필터 요구치 완화",
+    "입력 500~700 V 변화 시 누설 전류 18.0~21.9 mA 수준 유지, 전압 범위 변화에 대한 강건성 확보"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Industry Applications",
+    "paper_title": "Electric Vehicle Charging System Utilizing a Transformerless Common Mode Voltage Suppression Technique",
+    "institution": "University of Twente",
+    "doi_or_patent_no": "10.1109/TIA.2025.3590674",
+    "year": "2026",
+    "month": "1"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": "1173",
+      "fig_number": "Fig. 2",
+      "fig_title": "Simplified schematic of the proposed non-isolated two-stage EV charger featuring a three-phase PFC rectifier and a four-switch buck-boost FSBB"
+    },
+    {
+      "role": "result",
+      "page": "1181",
+      "fig_number": "Fig. 15",
+      "fig_title": "Comparison of the proposed modulation strategy and conventional SVM"
+    }
+  ],
+  "figure_captions_ko": [
+    "3상 PFC·4스위치 벅부스트 비절연 2단 EV 충전기 개략도",
+    "제안된 변조 방식과 기존 SVM의 비교"
+  ]
+}

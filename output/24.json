@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "3상 구동권선 통합 충전기 자속손실 억제 인터리빙 방법",
+  "head_messages": [
+    "구동 모터·인버터를 활용한 통합 충전기에서 영구자석 동기 모터(PMSM, Permanent Magnet Synchronous Motor) 자석 가열 요인을 줄여 고출력 DC 충전을 안정화",
+    "대칭 대신 위상 배치(0°,180°,180°)와 스위칭 상태 선택으로 d축 전압을 0으로 만들어 자석 와전류 손실과 d축 전류 리플을 억제, 실험·FEA로 효과 검증"
+  ],
+  "purpose": [
+    "800 V 배터리 고출력 충전 시 충전 전류 리플과 로터 자석 손실을 낮춰 온도 제한 없는 지속 충전 구현",
+    "모터 3상 권선을 모두 활용하는 통합 충전에서 추가 하드웨어 없이 제어 로직만으로 손실 억제 기술 구현"
+  ],
+  "prior_problems": [
+    "대칭 인터리빙은 dq 좌표(dq, direct–quadrature) d축 리플과 자속 방향 교번으로 로터 자석 와전류 손실 급증",
+    "2상만 도통하는 방식은 상별 RMS 전류가 증가해 권선 발열과 출력 지속 시간 저하 유발"
+  ],
+  "proposed_method": [
+    {
+      "title": "대칭 인터리빙에 따른 손실 메커니즘 분석",
+      "details": [
+        "대칭 위상천이 인터리빙(interleaving)은 기본 리플 최소화 목적",
+        "그러나 d축 전류 리플이 증가해 로터 자석의 와전류 손실을 유발",
+        "자속 방향이 주기적으로 교번되어 자속이 자석에 수직 유입되는 구간이 반복"
+      ]
+    },
+    {
+      "title": "d축 전압 0 유지를 위한 스위칭 상태 설계",
+      "details": [
+        "로터 전기각 90°에서 스위칭 상태 S1과 S4를 교번해 d축 전압을 0으로 유지",
+        "3상 위상 배치(Φu,Φv,Φw)=(0°,180°,180°)로 두 상 상부 스위치를 교대 구동",
+        "전기각 30°·150°에서도 S3·S6 또는 S2·S5 선택으로 동일 조건 성립"
+      ]
+    },
+    {
+      "title": "로터 각도 기반 인터리빙 위상·상태 전이 로직",
+      "details": [
+        "전기각 60° 주기마다 유효 상태 쌍을 선택해 d축 리플 제로 조건을 유지",
+        "10 kHz PWM에서 상태 전이 시점을 균등 분할해 기본 리플 성분 억제",
+        "3상 모두 통전해 2상 통전 대비 상별 RMS 전류 상승을 방지"
+      ]
+    },
+    {
+      "title": "제어 구현 및 검증 절차",
+      "details": [
+        "UVW 전류 센서 기반 전류 밸런스 피드백으로 상전류 불균형 보정",
+        "Nissan LEAF 모터와 Si IGBT 인버터로 5~80 kW 계단 부하 실험 수행",
+        "유한요소해석(FEA, Finite Element Analysis)로 손실 분해 및 분포 검증"
+      ]
+    }
+  ],
+  "improvements": [
+    "자석 손실을 전기각 90°에서 거의 0 W로 억제, 기존 최소치 약 400 W 대비 대폭 저감",
+    "로터 자석 온도 상승 50% 감소를 실험으로 확인",
+    "d축 전류 리플 50% 감소로 자석 와전류 손실 유발 요인 제거"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Applied Power Electronics Conference and Exposition (APEC)",
+    "paper_title": "A Novel Interleaving Method for High Power Integrated Electric Vehicle Charger with Three-Phase Permanent Magnet Synchronous Motor",
+    "institution": "Ltd.",
+    "doi_or_patent_no": "10.1109/APEC48143.2025.10977458",
+    "year": "2025",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 423,
+      "fig_number": "Fig. 1",
+      "fig_title": "Schematic of integrated EV charger with traction motor/inverter"
+    },
+    {
+      "role": "result",
+      "page": 427,
+      "fig_number": "Fig. 10",
+      "fig_title": "Transition of motor temperature for conventional and proposed interleaving"
+    }
+  ],
+  "figure_captions_ko": [
+    "제안된 인터리빙의 스위칭 상태와 dq축 전류",
+    "기존·제안 인터리빙의 철손 분해도"
+  ]
+}

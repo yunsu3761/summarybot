@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "AWD EV용 병렬 IBC 전류 불평형 상쇄 구성·제어 기술",
+  "head_messages": [
+    "AWD(All Wheel Drive) EV(Electric Vehicle)의 두 구동 인버터·모터를 활용해 고출력 IBC(Integrated Battery Charger)로 온보드 급속 충전을 구현",
+    "IBC1을 R-Y-B, IBC2를 Y-R-B로 배선해 그리드 전류 불평형을 상쇄하고, 영순분 제어로 순환전류를 억제하는 제어 구조 제시"
+  ],
+  "purpose": [
+    "AWD EV 기존 구동 하드웨어만으로 고출력 온보드 충전 기능을 실현",
+    "스플릿 위상 IBC의 그리드 전류 불평형과 병렬 운전 시 순환전류 문제 해결"
+  ],
+  "prior_problems": [
+    "스플릿 위상 기반 단일 IBC는 비대칭 권선과 맥동 자속으로 그리드 3상 전류 불평형 발생",
+    "병렬 컨버터 공용 DC 링크 구성에서 영순분 순환전류가 흐를 경로 존재"
+  ],
+  "proposed_method": [
+    {
+      "title": "AWD 구동 하드웨어 재활용 병렬 IBC 구성",
+      "details": [
+        "AWD EV의 두 모터·인버터를 병렬 IBC로 재구성",
+        "스플릿 위상 권선으로 맥동 자속 형성, 즉시 토크 0 보장",
+        "각 인버터를 전단 정류기로 동작시켜 유니티 역률로 그리드 전력 인출"
+      ]
+    },
+    {
+      "title": "불평형 상쇄를 위한 위상 시퀀스 설계",
+      "details": [
+        "IBC1은 R-Y-B, IBC2는 Y-R-B로 연결해 각 IBC의 불평형 성분을 상호 상쇄",
+        "정지 α-β와 동기 d-q 모델에서 시간변 인덕턴스·교차결합 성분 소거",
+        "대안 구성 R-B-Y/B-R-Y, Y-B-R/B-Y-R도 불평형 저감에 유효"
+      ]
+    },
+    {
+      "title": "순환전류 억제용 영순분 제어",
+      "details": [
+        "영순분 전류가 공통모드 전압 차와 누설 인덕턴스에 의해 결정됨을 모델화",
+        "단일 영순분 PI 제어기로 공통모드 전압을 조절해 순환전류 억제",
+        "동일 캐리어 PWM(Pulse Width Modulation) 적용으로 고주파 순환전류 경로 제거"
+      ]
+    },
+    {
+      "title": "전류 제어·전력 분담 및 동작 모드 관리",
+      "details": [
+        "DC 링크 전압 외부 루프가 q축 전류 기준을 생성, 분담계수 klf로 분배",
+        "각 IBC의 d,q 전류 내부 루프가 실·무효 전력을 분리 제어",
+        "PLL(Phase-Locked Loop)로 그리드 각도 추정, G2V·V2G 양방향 운전 지원"
+      ]
+    }
+  ],
+  "improvements": [
+    "단일 IBC 대비 충전 전력 2배 달성으로 온보드 충전 시간 단축",
+    "실험 효율 약 94% @1 kW, 시뮬레이션 효율 88.5% @10 kW",
+    "R-Y-B/Y-R-B 구성으로 음의 상분 상쇄되어 그리드 3상 전류 균형 확보"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Transportation Electrification",
+    "paper_title": "Parallel Operation of Integrated Battery Chargers for All Wheel Drive Electric Vehicles",
+    "institution": "Indian Institute of Space Science",
+    "doi_or_patent_no": "10.1109/TTE.2022.3215602",
+    "year": "2023",
+    "month": "6"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": "3107",
+      "fig_number": "Fig. 3",
+      "fig_title": "Proposed configuration of parallel IBCs (R-Y-B and Y-R-B phase sequences for IBC1 and IBC2, respectively)"
+    },
+    {
+      "role": "result",
+      "page": "3112",
+      "fig_number": "Fig. 10",
+      "fig_title": "Experimental results: steady state results at 300 V and 1 kW (proposed R-Y-B/Y-R-B configuration)"
+    }
+  ],
+  "figure_captions_ko": [
+    "R-Y-B/Y-R-B 기반 병렬 IBC 구성도",
+    "300 V·1 kW 정상상태 실험 결과—제안 R-Y-B/Y-R-B 구성"
+  ]
+}

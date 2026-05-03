@@ -1,0 +1,87 @@
+{
+  "doc_type": "paper",
+  "title": "모터 권선 통합 LCL IOBC dq 임피던스·안정 해석 기술",
+  "head_messages": [
+    "EV 구동모터 권선을 LCL 필터에 통합한 3상 IOBC의 입력 임피던스 특성과 제어 안정 한계를 정량 규명",
+    "dq 소신호 모델·능동 댐핑·전류/전압 루프 포함 임피던스 모델과 일반화 나이퀴스트로 그리드 임피던스 변화 하 안정 조건과 고조파 억제 성능 비교 검증"
+  ],
+  "purpose": [
+    "모터 권선 통합 LCL 기반 VSC의 입력 임피던스 거동과 제어 루프 안정 조건을 체계적으로 규명",
+    "그리드 임피던스 변화와 전압 피드포워드 적용 시 발생 가능한 불안정 요인을 식별"
+  ],
+  "prior_problems": [
+    "통합 LCL은 모터 파라미터로 그리드측 인덕턴스가 고정되어 공진 주파수와 제어 여유가 예측 곤란",
+    "그리드 임피던스 변화 시 전류 루프에서 음의 임피던스 영역이 확대되어 진동과 불안정 위험"
+  ],
+  "proposed_method": [
+    {
+      "title": "모터 권선 통합 LCL 구조와 dq 소신호 모델링",
+      "details": [
+        "부스트 정류기 평균모델을 dq 변환해 제어-전류 전달 특성의 소신호 모델 도출",
+        "모터 권선을 그리드측 인덕터로 등가화해 그리드측 인덕터와 등가저항을 포함한 LCL 어드미턴스 행렬 구성",
+        "컨버터 지연을 2차 패드 근사로 모델링해 제어 지연의 위상 여유 영향 반영"
+      ]
+    },
+    {
+      "title": "능동 댐핑·전류·전압 제어 루프 합성",
+      "details": [
+        "그리드전류 피드백 고역통과 보상으로 LCL 공진 모드 감쇠",
+        "PI 전류 제어기와 샘플링·연산 지연을 포함해 대역폭과 위상여유를 설계",
+        "DC 전압 PI와 전류 기준 생성으로 역률1 운전 및 외부 루프 결합 구현"
+      ]
+    },
+    {
+      "title": "입력 임피던스 도출과 안정성 판별 절차",
+      "details": [
+        "제어 미적용, 전류루프 폐루프, 전압루프 폐루프 순으로 입력 어드미턴스를 단계별 계산",
+        "PCC 전압 피드포워드 포함 시 임피던스 변화와 위상 교차 특성 비교",
+        "그리드 임피던스와 입력 임피던스 교차점의 위상 조건으로 잠재 불안정 구간 식별"
+      ]
+    },
+    {
+      "title": "GNC 기반 임피던스 민감도 분석과 HIL 검증",
+      "details": [
+        "임피던스 비율의 일반화 나이퀴스트 기준으로 폐루프 극점 위치와 안정 여부 판별",
+        "그리드 인덕턴스 1μH~3mH 범위에서 전류루프 대비 전압루프 폐루프의 안정성 평가",
+        "Typhoon HIL 실시간 시험으로 THD, 역률, 부하 스텝 및 임피던스 스텝 응답 검증"
+      ]
+    }
+  ],
+  "improvements": [
+    "통합 LCL은 공진 주파수가 약2.22kHz에서1.65kHz로 이동하고 중고주파 임피던스가 높아 스위칭 고조파 억제 우수",
+    "HIL에서 그리드 인덕턴스 0→3mH 변화에도 DC 전압 유지와 전류 파형 안정 확인, 과도 시 진동은 관찰",
+    "정격 운전에서 그리드 전류 THD 1.43%와 역률1 달성"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Workshop on Control and Modeling for Power Electronics (COMPEL)",
+    "paper_title": "Input Impedance and Stability Analysis of VSC in Integrated On-Board Chargers for Electric Vehicles",
+    "institution": "The Hong Kong Polytechnic University",
+    "doi_or_patent_no": "10.1109/COMPEL57542.2024.10614024",
+    "year": "2024",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 2,
+      "fig_number": "Fig. 1",
+      "fig_title": "Circuit diagram of 3ph LCL-filtered VSC IOBC system"
+    },
+    {
+      "role": "result",
+      "page": 9,
+      "fig_number": "Fig. 13",
+      "fig_title": "Test result waveforms at (a) Grid inductance change 0 to 1500 μH (b) Grid inductance change 0 to 3 mH"
+    }
+  ],
+  "figure_captions_ko": [
+    "",
+    ""
+  ],
+  "_meta_doc_type": "paper",
+  "_meta_doi": "10.1109/COMPEL57542.2024.10614024",
+  "_meta_patent_no": "",
+  "_meta_institution": "University",
+  "_meta_year": "",
+  "source_pdf": "6356.pdf"
+}

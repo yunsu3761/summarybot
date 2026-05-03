@@ -1,0 +1,87 @@
+{
+  "doc_type": "paper",
+  "title": "AWD EV 병렬 IBC 전류평형 구성·제로시퀀스 제어 기술",
+  "head_messages": [
+    "AWD 전기차 구동 하드웨어를 재활용해 통합 배터리 충전기(IBC, Integrated Battery Charger) 병렬화를 통해 고출력 온보드 급속충전 달성",
+    "분할권선 기계 2대를 R-Y-B/Y-R-B 상차수로 병렬 연결하고 제로시퀀스 기반 순환전류 제어와 dq 전류제어를 적용해 단위역률과 그리드 전류 평형 확보"
+  ],
+  "purpose": [
+    "AWD 전기차에서 추가 하드웨어 없이 고출력 급속 충전을 위한 병렬 IBC 구현",
+    "충전 중 모터 무토크 유지와 그리드 전류 불평형 최소화를 동시에 달성"
+  ],
+  "prior_problems": [
+    "단일 분할권선 기반 3상 IBC는 권선 비대칭과 맥동자속으로 그리드 전류 불평형 발생",
+    "병렬 컨버터 구성은 공통 DC 링크로 저주파 순환전류가 유발되어 손실과 발열 증가"
+  ],
+  "proposed_method": [
+    {
+      "title": "상차수 보완형 병렬 IBC 연결 설계",
+      "details": [
+        "분할권선 기계 2대를 R-Y-B/Y-R-B 상차수로 연결해 각 IBC의 음수순분을 상쇄",
+        "권선 병렬 접속으로 맥동자속만 형성되도록 구성해 즉시토크 0 유지",
+        "AWD의 전·후륜 인버터·모터를 재활용해 무보강 병렬 IBC로 구성"
+      ]
+    },
+    {
+      "title": "그리드 전류 평형 이론 모델링",
+      "details": [
+        "정지·동기 기준 좌표계로 전압·전류를 변환해 시간변화 인덕턴스 특성 해석",
+        "단일 IBC의 d·q 축 상호결합과 축별 인덕턴스 불일치를 병렬에서 상쇄",
+        "병렬 등가 인덕턴스가 축 간 동일·각도 독립임을 유도해 평형 조건 증명"
+      ]
+    },
+    {
+      "title": "제로시퀀스 순환전류 모델·제어",
+      "details": [
+        "공통모드 전압 차와 누설 인덕턴스에 좌우되는 제로시퀀스 전류식을 도출",
+        "두 IBC 제로시퀀스 전류가 크기 같고 반대라는 특성으로 단일 PI 제어 적용",
+        "반송파 비인터리빙과 제로시퀀스 기준 변조로 고주파 순환전류 억제"
+      ]
+    },
+    {
+      "title": "통합 제어구조 및 전력공유 로직",
+      "details": [
+        "PLL로 그리드 각도 추정 후 dq 전류제어로 유효·무효전력 분리 제어",
+        "외부 DC링크 전압 루프와 내부 전류 루프, 분담계수로 부하 공유 제어",
+        "단위역률 운전과 V2G/G2V 양방향 전력 흐름을 동일 구조에서 지원"
+      ]
+    }
+  ],
+  "improvements": [
+    "병렬 IBC로 단일 IBC 대비 충전 전력 2배 확보",
+    "1kW 실험 효율 약 94%, 10kW 시뮬레이션 효율 약 88.5%",
+    "제안 R-Y-B/Y-R-B 구성에서 그리드 전류가 거의 정상분만 포함되는 평형 파형 달성"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Transportation Electrification",
+    "paper_title": "Parallel Operation of Integrated Battery Chargers for All Wheel Drive Electric Vehicles",
+    "institution": "Indian Institute of Space Science",
+    "doi_or_patent_no": "10.1109/TTE.2022.3215602",
+    "year": "2023",
+    "month": "June"
+  },
+  "representative_figures": [
+    {
+      "page": 3107,
+      "fig_number": "Fig. 3",
+      "fig_title": "Proposed configuration of parallel IBCs (R-Y-B and Y-R-B phase sequences for IBC1 and IBC2, respectively)",
+      "role": "concept"
+    },
+    {
+      "page": 3112,
+      "fig_number": "Fig. 10",
+      "fig_title": "Experimental results: steady state results at 300 V and 1 kW (proposed R-Y-B/Y-R-B configuration)",
+      "role": "result"
+    }
+  ],
+  "figure_captions_ko": [
+    "AWD EV의 스플릿 페이즈 머신 기반 두 IBC를 병렬로 구성하고 IBC1/IBC2에 R-Y-B와 Y-R-B 상서열을 교차 적용해 단일 IBC에서 발생하는 그리드 전류 불평형을 상호 상쇄하는 시스템 구성",
+    "제안된 R-Y-B/Y-R-B 병렬 IBC에서 300 V, 1 kW 조건의 IBC1·IBC2 및 그리드 전류 정상상태 파형으로, 3상 전류의 균형과 단위 역률 운전 특성의 실험적 확인"
+  ],
+  "_meta_doc_type": "paper",
+  "_meta_doi": "10.1109/TTE.2022.3215602",
+  "_meta_patent_no": "",
+  "_meta_institution": "Institute of\nSpace Science and Technology",
+  "_meta_year": "2023",
+  "source_pdf": "7755.pdf"
+}

@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "듀얼 인버터 기반 전기차 무선충전 수신기 통합 시스템",
+  "head_messages": [
+    "전기차(EV, Electric Vehicle) 무선충전에서 수신 전력전자와 구동계를 통합해 고전력·저비용 충전 구현",
+    "듀얼 인버터와 오픈권선(open-winding) 모터를 DC/DC로 재구성하고 고주파 전류를 파워트레인에서 격리해 효율과 제어성 확보"
+  ],
+  "purpose": [
+    "송신기 제어·통신 없이 차량 탑재 제어만으로 정전류(CC, Constant Current)/정전압(CV, Constant Voltage) 충전 달성",
+    "별도 수신기 전력전자 없이 드라이브트레인 재사용으로 비용·중량 저감과 고전력 수용"
+  ],
+  "prior_problems": [
+    "기존 무선 수신기는 별도 정류기·컨버터가 필요해 비용·중량 증가와 6.6 kW 수준 저전력 한계",
+    "트랙션 계통으로 고주파 전류 유입 시 모터 철손·표피효과 손실과 IGBT(Insulated Gate Bipolar Transistor) 스위칭 제약"
+  ],
+  "proposed_method": [
+    {
+      "title": "고주파 전류 격리형 수신기 접속 토폴로지",
+      "details": [
+        "보상형 수신 코일을 소용량 커패시터·고속 다이오드로 듀얼 인버터 DC 링크(DC-link)에 연결",
+        "다이오드 경로 선택으로 수신 역기전력이 자동 클램프되어 배터리 전압 낮은 쪽 우선 충전",
+        "고주파 전류를 코일·다이오드·커패시터 루프에만 한정해 파워트레인 유입 차단"
+      ]
+    },
+    {
+      "title": "듀얼 인버터 기반 멀티레벨 DC/DC 구동",
+      "details": [
+        "두 트랙션 인버터와 오픈권선 모터를 멀티페이즈 멀티레벨 DC/DC로 구성해 DC 링크 전압 생성",
+        "동일 듀티와 상간 동기화로 제로시퀀스 전류만 인가해 토크 생성 방지",
+        "상간·인버터간 인터리빙으로 등가 리플 주파수를 스위칭의 6배로 높여 필터 용량 축소"
+      ]
+    },
+    {
+      "title": "능동/수동 모드 운전 및 전환 로직",
+      "details": [
+        "수동 모드에서 인버터 스위칭을 정지해 손실 최소화하며 고정 전류 수신 시 최대 전력 전달",
+        "능동 모드 B에서 듀티 사이클로 DC 링크 전압을 조절해 충전 전력을 선형 제어",
+        "스탠바이·CC·CV 상태기계로 모드 전환, 수신 코일 단락으로 안전한 기동·종료 보장"
+      ]
+    },
+    {
+      "title": "온보드 CC/CV·에너지 밸런싱 제어",
+      "details": [
+        "차량 탑재 디지털 신호 프로세서(DSP, Digital Signal Processor)와 센서로 CC·CV 루프 구현",
+        "비례적분 제어로 평균 전류·전압을 제어하고 느린 밸런싱 루프로 두 배터리 전압 일치",
+        "송신기는 차량 검출·전원 인가·종료만 수행해 통신 없이 동작"
+      ]
+    }
+  ],
+  "improvements": [
+    "수직 간격 200 mm에서 전체 충전 효율 최대 94.3% 달성",
+    "최대 불정렬 가로 75 mm·세로 100 mm에서도 전체 효율 80% 이상 유지",
+    "6.6 kW 충전에서 듀티 기반 선형 전력 제어와 수신 전압 절반화로 송신 코일 전류·발열 저감"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Power Electronics",
+    "paper_title": "Integrated Wireless Charging Receiver for Electric Vehicles With Dual Inverter Drives",
+    "institution": "University of Toronto",
+    "doi_or_patent_no": "10.1109/TPEL.2023.3320664",
+    "year": "2024",
+    "month": "1"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 1803,
+      "fig_number": "Fig. 2",
+      "fig_title": "Proposed integrated wireless charger, which re-uses the switches (S1–S4) introduced in [11] for wireless charging"
+    },
+    {
+      "role": "result",
+      "page": 1812,
+      "fig_number": "Fig. 20",
+      "fig_title": "Overall system efficiency, as well as loss breakdown of three main operating modes. Misaligned case assumes maximum misalignment"
+    }
+  ],
+  "figure_captions_ko": [
+    "제안된 S1–S4 재사용 통합 무선 충전기",
+    "최대 오정렬 가정 세 모드 전체 효율·손실 분해"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "doc_type": "patent",
+  "title": "동기톱니벨트·내치링 기반 로봇용 감속 장치",
+  "head_messages": [
+    "기어·웜 대신 동기톱니벨트(timing belt)와 안내 구조로 감속을 구현해 소음과 충격을 줄이는 로봇 구동 모듈 개발",
+    "내치링(internal ring gear)·가이드풀리(guide pulley)·지지롤러(support roller)로 벨트 장력과 맞물림을 제어해 미끄럼을 방지하고 정숙성·내구성을 확보"
+  ],
+  "purpose": [
+    "로봇 관절용 감속기의 백래시(backlash)·충격·소음을 낮추고 경량·저비용 전동 모듈을 구현",
+    "추가 가공 없이 유지보수 용이한 일체형 전동 감속 유닛을 제안"
+  ],
+  "prior_problems": [
+    "기어·웜·RV·하모닉 등은 강성 접촉으로 마모 후 백래시와 고소음이 발생하고 가속·감속 시 충격이 큼",
+    "정밀 기어 가공·조립 의존으로 비용과 중량이 높고 콤팩트한 설계와 정숙성 확보가 어려움"
+  ],
+  "proposed_method": [
+    {
+      "title": "동기톱니벨트 기반 감속 메커니즘",
+      "details": [
+        "로터(rotor) 입력축과 동기톱니벨트 치합으로 회전력을 선형 이동으로 변환",
+        "벨트 길이를 축 둘레보다 길게 설계해 감속비를 기하학적으로 결정",
+        "벨트 출력 구간이 회전 프레임(frame)을 구동해 동력 출력"
+      ]
+    },
+    {
+      "title": "내치링·가이드풀리·지지롤러 경로 형성",
+      "details": [
+        "내치링으로 벨트 경로를 한정해 미끄럼과 이탈을 억제",
+        "가이드풀리가 벨트를 눌러 맞물림 길이를 늘리고 접촉을 유지",
+        "지지롤러·부싱(bushing)이 벨트 내측을 따라 슬라이딩 지지해 마찰을 저감"
+      ]
+    },
+    {
+      "title": "동력 전달과 장력 관리 로직",
+      "details": [
+        "풀리와 지지부를 벨트 내부에 배치해 항상 적정 장력을 유지",
+        "풀리·부싱의 자전과 공전으로 동활차 유사 운동을 생성해 토크 증대",
+        "긴 맞물림과 일정 궤적으로 충격과 백래시를 흡수하는 유연 전달"
+      ]
+    },
+    {
+      "title": "전동 모듈 일체형 구조",
+      "details": [
+        "모터 로터 축을 감속기 입력축과 동축 결합해 부품 수를 축소",
+        "베어링(bearing)으로 로터 축과 회전 프레임을 지지해 동심도와 강성을 확보",
+        "내치링과 감속부를 베이스(base)에 고정해 축방향 길이를 단축"
+      ]
+    }
+  ],
+  "improvements": [
+    "톱니벨트 유연 접촉과 장력 제어로 기계적 충격과 작동 소음이 크게 저감",
+    "내치링 제한과 긴 맞물림 구간으로 슬립(slip)을 억제해 전달 정밀도와 출력 안정성이 향상",
+    "기어군 제거와 통합 설계로 중량과 부품 수를 줄여 제작비와 유지보수 부담을 경감"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "CNIPA",
+    "paper_title": "A reducer and an electric drive power unit and quadruped robot using the same",
+    "institution": "Ltd.",
+    "doi_or_patent_no": "CN111609095A",
+    "year": "2020",
+    "month": "09"
+  },
+  "representative_figures": [
+    {
+      "page": 12,
+      "fig_number": "Fig.1",
+      "fig_title": "Exploded view of the reducer",
+      "role": "concept"
+    },
+    {
+      "page": 16,
+      "fig_number": "Fig.5",
+      "fig_title": "Sectional view along A-A of the electric drive unit",
+      "role": "result"
+    }
+  ],
+  "figure_captions_ko": [
+    "도 3의 구조의 A-A 방향 단면도",
+    "전기 구동 동력 단위의 정면도"
+  ],
+  "source_pdf": "cn202010457644ap.pdf"
+}

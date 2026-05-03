@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "가변 직렬·병렬 재구성 기반 동적 전압 전기차 배터리 시스템",
+  "head_messages": [
+    "배터리 팩을 주행 상태에 맞춰 직렬·병렬로 실시간 재구성해 효율과 성능을 동시에 달성하는 DVEVS(Dynamic Voltage EV System) 개념 정립",
+    "전력전자 하이브리드 스위칭과 EDLC(Electric Double-Layer Capacitor) 융합, BTMS(Battery Thermal Management System)·충전 인프라 연계를 통한 주행·충전 최적화 구현"
+  ],
+  "purpose": [
+    "고속 순항과 급가속 등 상이한 부하 조건에서 전압·전류 조건을 능동 제어해 파워트레인 효율과 성능을 동시 확보",
+    "열·신뢰성 제약을 완화하며 다양한 충전 전압 범위를 수용하는 재구성형 전기차 배터리 아키텍처 구현"
+  ],
+  "prior_problems": [
+    "고정 전압 배터리 구조는 주행 조건별 최적 전압을 제공하지 못해 I2R 손실과 모터 효율 저하 발생",
+    "충전 인프라 전압 호환 범위 제한과 열 집중으로 인한 셀 열화, 고전류 스위칭의 응답 지연과 아크 위험"
+  ],
+  "proposed_method": [
+    {
+      "title": "배터리 토폴로지와 재구성 로직",
+      "details": [
+        "PCM(Parallel-Cell-Module)·SCM(Series-Cell-Module) 혼합 토폴로지로 전압·전류 범위를 유연화",
+        "BMS(Battery Management System) 기반 SOC·온도·부하 추정으로 직렬·병렬 전환 시점 결정",
+        "전환 시 토크 홀·순시 전류 피크 완화를 위한 안전 시퀀스와 밸런싱 모드 적용"
+      ]
+    },
+    {
+      "title": "전력전자 기반 하이브리드 스위칭",
+      "details": [
+        "SSR(Solid-State Relay, MOSFET·IGBT·SiC)와 컨택터 결합으로 속도와 내전류 성능 동시 확보",
+        "프리차지·스너버·디바운스 제어로 아크·인러시 억제 및 접점 스트레스 저감",
+        "센서·마이컴 통합 전력 모듈로 실시간 진단과 운전 요구 기반 적응 전환 구현"
+      ]
+    },
+    {
+      "title": "EDLC 융합 하이브리드 에너지 관리",
+      "details": [
+        "배터리+EDLC 병렬 운전으로 가속·회생 제동의 피크 전력 셰이빙 수행",
+        "EDLC 전압 저하 시 직렬 연결로 잔여 에너지 회수하는 체인지오버 로직 적용",
+        "양방향 DC 버스와 한계 전류·전압 기반 모드 스케줄링으로 배터리 스트레스 경감"
+      ]
+    },
+    {
+      "title": "충전 인프라 및 통신 연동",
+      "details": [
+        "LLC(Inductor–Inductor–Capacitor) 재구성 공진 컨버터와 다중 모드 정류로 200~800V 수용",
+        "ISO 15118 확장 기반 EVSE(Electric Vehicle Supply Equipment)·BMS·BTMS 협조 제어",
+        "소프트 스위칭 전 구간 유지와 전압 스트레스 관리로 효율과 신뢰성 확보"
+      ]
+    }
+  ],
+  "improvements": [
+    "재구성 LLC 기반 DC 충전에서 입력 400V, 출력 200~800V, 정격 500W, 피크 효율 93.9% 달성",
+    "SSR는 마이크로초 수준, 컨택터는 10~50 ms 전환으로 부하 조건별 응답성과 내전류 성능 균형 확보",
+    "셀 권장 온도 20~45°C 범위 유지 전략과 버스바 설계 최적화로 국부 열점 발생 위험 저감"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "SAE International",
+    "paper_title": "Dynamic Voltage EV System (DVEVS): Achieving Enhanced Electric Vehicle Efficiency and Performance through a Switchable Series-Parallel Battery Configuration",
+    "institution": "Mercedes-Benz",
+    "doi_or_patent_no": "10.4271/2026-26-0203",
+    "year": "2026",
+    "month": "01"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 3,
+      "fig_number": "Figure 2",
+      "fig_title": "Different operating modes. [3]"
+    },
+    {
+      "role": "result",
+      "page": 4,
+      "fig_number": "Figure 5",
+      "fig_title": "Comparison of cooling efficiency for different airflow strategies [1]"
+    }
+  ],
+  "figure_captions_ko": [
+    "서로 다른 배터리 운전 모드 회로도",
+    "다양한 공기 유동 전략의 냉각 효율 비교"
+  ]
+}

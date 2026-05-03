@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "무토크 보장 2상 인터리브드 통합 DC 충전 방법",
+  "head_messages": [
+    "저전압 급속 DC 충전기로 고전압 EV 배터리를 승압 충전하며 구동 모터 사용 중 회전자 무토크 정지 보장",
+    "2상 전도와 180° 인터리브드 스위칭으로 영순서 전압을 억제해 전류 리플과 철손을 감소시키는 고효율 통합 충전 제어"
+  ],
+  "purpose": [
+    "산업 표준 410–500 V 급속 충전기로 800 V급 배터리 승압 충전을 실현하고 차량 구동계를 활용하는 통합 충전 제어 구현",
+    "충전 중 영순서 토크와 전류 리플로 인한 회전 및 철손 문제를 억제하는 무토크 제어 달성"
+  ],
+  "prior_problems": [
+    "세 위상 평균 전류를 동일하게 하는 종래 방식은 영순서 토크가 남아 무부하 정지 보장이 간접적임",
+    "3상 120° 인터리브드는 전압 이득 2에서 영순서 전압 제거가 불가해 리플 증가와 철손 가중"
+  ],
+  "proposed_method": [
+    {
+      "title": "무토크 곡선 기반 전류 벡터 참조 생성",
+      "details": [
+        "영(零)순서 전류(ZSC, Zero-Sequence Current)와 영순서 쇄교의 토크 기여를 포함한 무토크 조건 해석",
+        "파크 변환(Park Transformation)과 dq 평면에서의 쌍곡선 무토크 곡선 도출",
+        "충전 전류 지령 변화에 따라 교차점 궤적으로 각 상 전류 참조를 온라인 생성"
+      ]
+    },
+    {
+      "title": "2상 전도 영역과 제어 규칙 설계",
+      "details": [
+        "두 상만 전도하는 선형 제약을 dq 평면에 사상해 삼각형 전도 영역 정의",
+        "무토크 곡선과 전도 영역의 교차점을 선택해 순간 무토크 점으로 전류 유도",
+        "로터 위치 추정치에 대해 교차점 갱신으로 전류 벡터를 실시간 추종"
+      ]
+    },
+    {
+      "title": "180° 인터리브드 승압 스위칭 설계",
+      "details": [
+        "통합 충전 토폴로지를 부스트 변환기 등가로 보고 2상 180° 인터리브드 시퀀스 구성",
+        "전압 이득 2에서 영순서 전압(ZSV, Zero-Sequence Voltage) 합을 순간마다 최소화",
+        "공통모드 인덕턴스에서의 전류 변화율을 억제해 리플 전류와 철손을 감소"
+      ]
+    },
+    {
+      "title": "SiC 인버터 실장 및 실험 검증 로직",
+      "details": [
+        "SiC MOSFET 기반 3상 인버터와 IPMSM(Interior Permanent Magnet Synchronous Motor) 플랫폼 구성",
+        "스위칭 주파수 10–30 kHz, 400 V/200 V 스케일드 셋업에서 파형과 효율 측정",
+        "회전 변위 모니터링으로 무토크 정지 확인 및 리플 저감 효과 정량 비교"
+      ]
+    }
+  ],
+  "improvements": [
+    "스위칭 30 kHz 종래 효율 95.4% 대비 제안 10 kHz에서 95.9% 달성, 저주파에서도 높은 효율 확보",
+    "전압 이득 2에서 영순서 전압 억제로 공통모드 리플 전류 감소, 철손 저감과 발열 부담 완화",
+    "무토크 곡선 추종으로 충전 전류 0–15 A 전 구간에서 회전 억제, 정지 상태 안전성 확보"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Applied Power Electronics Conference and Exposition (APEC)",
+    "paper_title": "Two-Phase Interleaved DC Charging Method of Integrated Charger for Efficiency Enhancement",
+    "institution": "Seoul National University",
+    "doi_or_patent_no": "10.1109/APEC48139.2024.10509044",
+    "year": "2024",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": "801",
+      "fig_number": "Fig. 1",
+      "fig_title": "Schematic of charging systems utilizing the motor windings and a voltage-source inverter"
+    },
+    {
+      "role": "result",
+      "page": "805",
+      "fig_number": "Fig. 8",
+      "fig_title": "Charging efficiency of the conventional and the proposed strategy versus switching frequency at rated power"
+    }
+  ],
+  "figure_captions_ko": [
+    "모터 권선과 전압원 인버터를 이용한 충전 시스템 개략도",
+    "정격 전력에서 스위칭 주파수별 기존·제안 전략 충전 효율"
+  ]
+}

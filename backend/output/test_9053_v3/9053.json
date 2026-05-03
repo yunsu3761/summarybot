@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "고전력밀도 IMD를 위한 구조·컨버터·열·EMI 통합 설계 기술",
+  "head_messages": [
+    "IMD(Integrated Motor Drive) 소형·고전력밀도화를 위한 구조·컨버터·열·EMI 핵심 기술 정리",
+    "WBG(Wide-Bandgap) 소자와 LCL 필터(LCL filter) 통합, DC-link 저감, IMMD(Integrated Modular Motor Drive) 설계 및 통합도 정량평가 제시"
+  ],
+  "purpose": [
+    "전동기·컨버터 일체화(IMD) 설계 의사결정을 위한 기술 옵션과 한계치 체계화",
+    "응용별 통합도 정량평가로 고전력밀도·소형화 설계 기준 마련"
+  ],
+  "prior_problems": [
+    "모터·컨버터 열 결합, DC-link 커패시터 체적·높이, EMI로 인한 신뢰성 저하",
+    "표준화된 통합 설계·평가 지표 부재로 설계 최적화와 비용 추정의 불확실성"
+  ],
+  "proposed_method": [
+    {
+      "title": "IMD 통합도 정량평가 체계",
+      "details": [
+        "전력, 체적, 통합 위치, 열설계, 수동소자 최적화, WBG, 모듈러 지표 정의",
+        "각 지표 정규화 후 용도별 가중치 적용으로 단일 통합도 점수 산출",
+        "설계 대안 비교·벤치마킹 및 목표 통합도 역설계 지원"
+      ]
+    },
+    {
+      "title": "IMMD 전력변환기·DC 링크 최적화",
+      "details": [
+        "게이트 인터리빙과 캐리어 위상천이로 전류 리플 약 75% 저감",
+        "모듈 직렬연결로 모듈당 전압 억제 및 입력전류 저감",
+        "금속 필름 DC-link 채택과 고주파 구동으로 커패시터 체적·높이 축소"
+      ]
+    },
+    {
+      "title": "WBG 소자·LCL 필터 통합 설계",
+      "details": [
+        "SiC·GaN 기반 고주파(약 100 kHz) 스위칭으로 수동소자 소형화",
+        "dV/dt로 인한 절연 스트레스 저감 위해 모터측 LCL 필터 적용",
+        "보조 슬롯·치 둘레 감은 보조권선 등 모터 일체형 인덕터 배치"
+      ]
+    },
+    {
+      "title": "통합 열모델·냉각·EMI 동시 설계",
+      "details": [
+        "TRN(Thermal Resistance Network)·FEA(Finite Element Analysis)·CFD(Computational Fluid Dynamics) 연성",
+        "원통·육각 하우징 수로, 핀, 축류·방사 공랭 팬 토폴로지 설계",
+        "접지·차폐·필터·에폭시 포팅으로 근접 배치 EMI 경감"
+      ]
+    }
+  ],
+  "improvements": [
+    "모터·컨버터 일체화와 케이블 단축으로 시스템 비용 20~40% 절감",
+    "캐리어 위상천이로 DC-link 커패시터 리플전류 약 75% 저감, 용량 축소",
+    "WBG 적용으로 스위칭 주파수 20 kHz에서 100 kHz로 확대, 도통저항 약 300배 감소"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "Energies",
+    "paper_title": "Overview of Integrated Electric Motor Drives: Opportunities and Challenges",
+    "institution": "City University of Hong Kong",
+    "doi_or_patent_no": "10.3390/en15218299",
+    "year": "2022",
+    "month": "11"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 13,
+      "fig_number": "Figure 8",
+      "fig_title": "IMDs integrated thermal design system"
+    },
+    {
+      "role": "result",
+      "page": 10,
+      "fig_number": "Figure 5",
+      "fig_title": "Comparison of wide-band semiconductor performance"
+    }
+  ],
+  "figure_captions_ko": [
+    "IMD 전자기 간섭(EMI) 발생원 개략도",
+    "IMMD 전력 모듈 구조: 기존·병렬·직렬 연결 구성"
+  ]
+}

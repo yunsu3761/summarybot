@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "통합 전동기 드라이브 구조·열·EMI 통합 설계 기술",
+  "head_messages": [
+    "소형·고밀도 추진을 위해 통합 전동기 드라이브(IMDs, Integrated Motor Drives)의 구조·전력변환·열·전자기 간섭(EMI, Electromagnetic Interference) 설계 기준 정립",
+    "모듈러 아키텍처·DC링크 저감, 와이드밴드갭(WBG, Wide Bandgap) 소자(SiC, Silicon Carbide·GaN, Gallium Nitride), LCL 필터·EMI·냉각 공동설계로 비용 20~40% 절감과 전력밀도 향상 달성"
+  ],
+  "purpose": [
+    "EV·항공·선박 등 고전력밀도 응용을 위한 IMDs 통합 설계 지침과 평가법 제시",
+    "정규화 지표 기반 통합도 산정으로 설계 선택지 비교·의사결정 지원"
+  ],
+  "prior_problems": [
+    "모터·컨버터 열결합과 EMI, DC링크 커패시터 체적·높이로 인한 체적 최적화 한계",
+    "맞춤형 설계로 제조비 상승·정비 난이도 증가, 표준화된 통합도 지표 부재"
+  ],
+  "proposed_method": [
+    {
+      "title": "통합 구조 분류와 모듈러 IMMD 아키텍처",
+      "details": [
+        "컨버터 위치별 하우징 장착·고정자 철심 장착 구조 정의와 장단점 비교",
+        "IMMDs(Integrated Modular Motor Drive) 권선 분할로 모듈 독립 제어 설계",
+        "정규화 지표와 가중치 결합으로 IMDs 통합도 단일 점수 산출"
+      ]
+    },
+    {
+      "title": "컨버터·수동소자 체적 저감 설계",
+      "details": [
+        "모듈 병렬·직렬 DC버스 토폴로지와 능동 전압 평형으로 전류·전압 제약 관리",
+        "게이트 인터리빙·캐리어 위상천이로 DC링크 전류 리플을 최대 약 75% 저감",
+        "와이드밴드갭(WBG) 소자(SiC·GaN) 채택으로 스위칭 주파수 5배 향상과 발열 저감"
+      ]
+    },
+    {
+      "title": "LCL 필터(LCL, Inductor-Capacitor-Inductor)·EMI 동시 통합",
+      "details": [
+        "보조 권선·보조 슬롯·각형 적층 코너 인덕터 등 LCL 통합 배치 제안",
+        "PCB 권선·더블 슬롯 등 결합 경로 최소화로 주자속 간섭 완화",
+        "차폐·접지·단선 케이블화·수동/능동 필터로 전도·복사 잡음 억제"
+      ]
+    },
+    {
+      "title": "열 모델링과 강제냉각 공동설계",
+      "details": [
+        "TRN(열저항망)·FEA(유한요소해석)·CFD(전산유체해석) 혼합 모델로 온도 분포 예측",
+        "사각 채널 수냉은 원형 대비 열교환 약 20% 우수, 공냉 6종 유로 제시",
+        "써멀 비아 PCB·듀얼 FET·열차폐·공동 히트싱크로 열저항 저감"
+      ]
+    }
+  ],
+  "improvements": [
+    "모터·컨버터 일체화로 케이블 제거 시 시스템 비용 20~40% 절감",
+    "캐리어 위상천이 적용 시 DC링크 전류 리플 약 75% 감소로 커패시터 체적·높이 저감",
+    "WBG 소자 적용으로 스위칭 주파수 5배, 손실 저감으로 수동소자 소형화 및 2.2 kW/kg 수준 전력밀도 사례 확보"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "Energies",
+    "paper_title": "Overview of Integrated Electric Motor Drives: Opportunities and Challenges",
+    "institution": "City University of Hong Kong",
+    "doi_or_patent_no": "10.3390/en15218299",
+    "year": "2022",
+    "month": "11"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 7,
+      "fig_number": "Figure 3",
+      "fig_title": "Four categories of IMDs"
+    },
+    {
+      "role": "result",
+      "page": 10,
+      "fig_number": "Figure 5",
+      "fig_title": "Comparison of wide-band semiconductor performance"
+    }
+  ],
+  "figure_captions_ko": [
+    "",
+    ""
+  ]
+}

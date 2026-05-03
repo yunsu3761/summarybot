@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "모터권선·3포트변압기·토템폴 기반 4-in-1 iOBC 시스템",
+  "head_messages": [
+    "EV 전력전자 4-in-1 통합으로 OBC·부스트·구동·APM 일체화와 듀얼모터 지원 구현",
+    "모터권선·3포트변압기·토템폴 재구성으로 PFC·APM 1차 제거와 전력단 비용 15% 절감 효과"
+  ],
+  "purpose": [
+    "차량 규격 모터와 인버터를 재활용해 AC·DC 충전, 구동, 저전압 전원을 단일 패키지로 통합",
+    "800 V 듀얼모터 BEV에서 갈바닉 절연과 V2X를 포함한 다모드 운용을 소프트웨어로 지원"
+  ],
+  "prior_problems": [
+    "기존 비통합 구조는 OBC PFC·APM·인버터가 분리돼 반도체·수동소자·트랜스 수량과 비용 증가",
+    "모터 권선 이용 iOBC는 절연 부재와 충전 토크, 인버터 스위칭 조건 불일치로 안전·효율 저하"
+  ],
+  "proposed_method": [
+    {
+      "title": "모터 권선 기반 PFC·DC 부스트 충전 재구성",
+      "details": [
+        "모터 권선을 입력 초크로 사용해 토템폴 PFC로 단상·스플릿상 충전 구현",
+        "U상 직렬, V·W상 분지로 두 갈래 부스트 구성해 400→800 V DC 부스트 충전 수행",
+        "연속전도모드(CCM, Continuous Conduction Mode)로 전류 리플과 THD 저감"
+      ]
+    },
+    {
+      "title": "3포트 변압기 기반 HV/LV 자기통합",
+      "details": [
+        "트리플 액티브 브리지(TAB, Triple Active Bridge)와 3포트 변압기(3PT, Three-Port Transformer) 적용",
+        "Port1-DC링크, Port2-HV 배터리, Port3-48 V를 결합해 갈바닉 절연 유지",
+        "Port2·Port3는 듀얼 액티브 브리지(DAB, Dual Active Bridge)로 양방향 전력 흐름 구성"
+      ]
+    },
+    {
+      "title": "인버터 토템폴 재사용과 모드 전환 로직",
+      "details": [
+        "트랙션 인버터를 토템폴 역률보정(PFC, Power Factor Correction) 회로로 재활용",
+        "SM·SP·SDC 릴레이 조합으로 구동, AC충전, DC부스트, V2X 격리·비격리 모드 선택",
+        "전력 스테이지 공유로 OBC PFC단과 APM 1차 H브리지·입력 커패시터 제거"
+      ]
+    },
+    {
+      "title": "충전 토크 제거·동적 게이트 구동",
+      "details": [
+        "내장형영구자석동기모터(IPMSM, Interior Permanent Magnet Synchronous Motor) q축 전류 0 규제로 토크 억제",
+        "히스테리시스 전류제어와 외부 PI 루프로 HV 배터리 전압·전류 규제",
+        "가변 게이트 저항 드라이버로 주행 10 kHz, 충전 50 kHz 조건에서 스위칭 손실 균형"
+      ]
+    }
+  ],
+  "improvements": [
+    "전력단 원가 15% 절감 달성, PFC·APM 1차 제거와 3포트 자기통합으로 부품 수·트랜스 수 감소",
+    "충전 토크 RMS 18 N·m에서 1.3 N·m로 저감, q축 전류 0 규제 제어로 주차 안전성 확보",
+    "TAB 전력 디커플링 제어 응답 약 20 μs 달성, Port3 부하 100% 변화 시 Port2 전류 영향 최소화"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE/AIAA Transportation Electrification Conference and Electric Aircraft Technologies Symposium (ITEC+EATS)",
+    "paper_title": "SuperBox: A 4-in-1 Power Electronics Solution for Dual-Motor Electric Vehicles",
+    "institution": "Schaeffler R",
+    "doi_or_patent_no": "10.1109/ITEC63604.2025.11097934",
+    "year": "2025",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 3,
+      "fig_number": "Fig. 3",
+      "fig_title": "Diagram of the proposed SuperBox iOBC system for dual motor BEVs"
+    },
+    {
+      "role": "result",
+      "page": 8,
+      "fig_number": "Fig. 11",
+      "fig_title": "Power stage cost breakdown of SuperBox compared to conventional non-integrated solution"
+    }
+  ],
+  "figure_captions_ko": [
+    "",
+    ""
+  ]
+}

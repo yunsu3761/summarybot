@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "외부 인덕터 전단·모터 후단 배치 GaN IOBC 구성 기술",
+  "head_messages": [
+    "IPMSM(Interior Permanent Magnet Synchronous Motor) 저상순 인덕턴스로 인한 단상 AC 그리드 전류 고조파 왜곡률(THD, Total Harmonic Distortion) 규격 충족을 위한 전자 구동축(E-axle) 내 통합 온보드 차저(Integrated On-Board Charger, IOBC) 구조 제안",
+    "모터 권선을 후단 DC/DC 벅 인덕터로, 외부 인덕터를 전단 AC/DC 부스트로 재배치한 GaN(Gallium Nitride) 기반 구성과 제어로 저차 고조파를 억제해 THD 2.9% 달성"
+  ],
+  "purpose": [
+    "저인덕턴스 IPMSM 사용 환경에서 그리드 전류 THD 5% 규격을 충족하는 단상 AC 충전 IOBC 구현",
+    "배터리 피크투피크 전류 리플을 규격 내 유지하면서 저비용·저체적 E-axle 실장 달성"
+  ],
+  "prior_problems": [
+    "모터·인버터를 전단 부스트에 쓰는 기존 IOBC는 IPMSM 저상순 인덕턴스로 THD 6.9~7.1% 발생",
+    "컨트롤러·스위칭 주파수 50 kHz 한계에서 외부 인덕터 없이 규격 충족 곤란"
+  ],
+  "proposed_method": [
+    {
+      "title": "전단·후단 요소 재배치 기반 IOBC 아키텍처",
+      "details": [
+        "외부 인덕터를 전단 AC/DC 부스트에 배치해 저주파 고조파를 전류 제어로 억제",
+        "모터 권선을 후단 DC/DC 벅 인덕터로 사용해 저상순 인덕턴스의 영향 제거",
+        "양방향 전력 경로 유지로 V2G와 비상 부하 공급 기능 호환"
+      ]
+    },
+    {
+      "title": "GaN 전력단 및 스위칭 구성",
+      "details": [
+        "GaN HEMT 병렬 적용으로 50 kHz 구동에서 손실과 발열을 억제",
+        "전단은 정전류 형상용 PFC 스위칭, 후단은 전류 모드 벅 스위칭 적용",
+        "GaN 역도통 특성에 따른 영전류 구간 클램프를 고려한 게이팅 전략 적용"
+      ]
+    },
+    {
+      "title": "제어 루프 및 기준 생성",
+      "details": [
+        "전단 전류 내측 루프와 전압 외측 루프로 정현 입력 전류 형상화",
+        "후단 배터리 전류 레귤레이터로 리플과 과도 응답을 규격 내 유지",
+        "단일 마이컴 50 kHz 제어 제약에서 전단·후단 파라미터 독립 조정"
+      ]
+    },
+    {
+      "title": "설계 근거와 검증 절차",
+      "details": [
+        "H-브리지 시험으로 모터 상순 인덕턴스 50 kHz에서 135 µH 측정",
+        "MATLAB 해석으로 전류 파형과 THD 스펙트럼을 구성별 비교",
+        "그리드 시뮬레이터와 저항 부하로 3.6 kW 조건의 실험 검증 수행"
+      ]
+    }
+  ],
+  "improvements": [
+    "그리드 전류 THD(40차 미만): 기존 6.9%@50 kHz, 7.1%@100 kHz 대비 수정 구성 2.9%@50 kHz",
+    "배터리 피크투피크 전류 리플 1.2 A로 동일 조건에서 규격 내 유지",
+    "3.6 kW 실험에서 수정 IOBC는 저부하를 제외한 다수 부하 구간에서 THD 5% 미만 달성"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Energy Conversion Congress and Exposition (ECCE)",
+    "paper_title": "GaN Based Modified Integrated On-Board Charger Configuration Using Minimum Additional Active and Passive Components",
+    "institution": "Nagoya Institute of Technology",
+    "doi_or_patent_no": "10.1109/ECCE53617.2023.10362905",
+    "year": "2023",
+    "month": ""
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 1978,
+      "fig_number": "Fig.6",
+      "fig_title": "Proposed modified IOBC configuration"
+    },
+    {
+      "role": "result",
+      "page": 1980,
+      "fig_number": "Fig.13",
+      "fig_title": "Experimental results of THD of the grid current"
+    }
+  ],
+  "figure_captions_ko": [
+    "제안된 수정형 IOBC 구성도",
+    "그리드 전류 THD 실험 결과 그래프"
+  ]
+}

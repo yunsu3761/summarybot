@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "WBG 기반 CSI·SIPM 결합 EV 고집적 통합 구동 시스템",
+  "head_messages": [
+    "광대역갭(WBG, Wide Bandgap) 소자 기반 전류원 인버터(CSI, Current-Source Inverter) 일체형 모터 드라이브(IMD, Integrated Motor Drive)로 EV 견인용 고전력밀도 달성",
+    "세라믹 AC 필터·고주파 DC 링크·SVPWM 제어·양방향 DC/DC로 물리 통합과 노이즈 억제를 달성하며 전력전자 115 kW/L, 기계 55.6 kW/L 구현"
+  ],
+  "purpose": [
+    "표면 매입형 영구자석(SIPM, Surface Inset Permanent Magnet) 기계와 CSI를 결합해 55 kW 연속·100 kW 피크 견인 구동을 소형 경량으로 구현",
+    "공유 수랭과 강제 송풍 복합 냉각으로 전력전자와 기계의 열 한계를 안전하게 유지"
+  ],
+  "prior_problems": [
+    "전압원 인버터(VSI, Voltage-Source Inverter)에서 WBG 적용 시 높은 dv/dt로 EMI·단자 과전압·베어링 전류 유발",
+    "분리 하우징·축방향 탑재·이중 냉각 구조로 IMD 체적·질량 증가와 대전력 확장성 저하"
+  ],
+  "proposed_method": [
+    {
+      "title": "SiC 기반 CSI 전력단·세라믹 AC 필터 설계",
+      "details": [
+        "SiC 모듈과 직류차단 다이오드로 RVB 스위치 구성",
+        "전류 천이 루프 최소화를 위한 전력 모듈 분할 배치와 짧은 버스바 레이아웃",
+        "세라믹 커패시터 병렬로 고리플 전류 대응, 보드 높이 80 mm에서 25 mm로 축소"
+      ]
+    },
+    {
+      "title": "고주파 DC 링크 인덕터 소형화",
+      "details": [
+        "스위칭 80 kHz로 요구 인덕턴스 저감, 권선 수와 코어 단면 축소",
+        "토로이드 코어·리츠선·알루미늄 냉각컵 적용으로 총 체적 0.2 L 달성",
+        "양극 버스에 인덕턴스 분할 배치로 전도 공통모드 노이즈 억제"
+      ]
+    },
+    {
+      "title": "CSI 전류 합성·이중루프 제어와 DC/DC 재생",
+      "details": [
+        "공간벡터 PWM(SVPWM, Space Vector PWM)로 6 유효벡터와 영벡터 조합",
+        "내부 전압 P 제어와 외부 전류 PI 제어로 지령 추종과 안정도 확보",
+        "양방향 H브리지 DC/DC로 DC 링크 전류 제어와 회생 충전 수행"
+      ]
+    },
+    {
+      "title": "공유 수랭 재킷·강제 송풍 복합 냉각",
+      "details": [
+        "육각 외면·원형 내경 일체 하우징에 나선 유로 수랭 채널 형성",
+        "2~8.5 L/min 유량 범위 설계로 열저항 감소와 온도 균일화",
+        "로터 덕트와 공극 송풍으로 자석 6667 r/min 52.4°C, 20000 r/min 72.8°C 유지"
+      ]
+    }
+  ],
+  "improvements": [
+    "전력전자 115 kW/L, 기계 55.6 kW/L의 활성 전력밀도 달성으로 제한 공간 차량 패키징 효율 향상",
+    "세라믹 AC 필터 적용으로 전력 보드 높이 70% 축소(80 mm→25 mm), 루프 인덕턴스와 스위칭 링잉 저감",
+    "실험 전류 THD 1.35~2.53% 달성, 준정현 전류로 권선 손실·CM EMI와 베어링 전류 위험 저감"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Transportation Electrification",
+    "paper_title": "Power-Dense Integrated Motor Drive Using a WBG-Enabled Current-Source Inverter for EV Traction Applications",
+    "institution": "University of Wisconsin–Madison",
+    "doi_or_patent_no": "10.1109/TTE.2025.3617908",
+    "year": "2026",
+    "month": "February"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": "543",
+      "fig_number": "Fig. 3",
+      "fig_title": "3-D rendered drawing of the radially mounted CSI-based IMD"
+    },
+    {
+      "role": "result",
+      "page": "552",
+      "fig_number": "Fig. 21",
+      "fig_title": "FFT analysis of CSI output voltage and current waveforms"
+    }
+  ],
+  "figure_captions_ko": [
+    "방사형 장착 CSI 기반 IMD의 3차원 렌더링 도면",
+    "CSI 출력 전압·전류 파형의 FFT 분석"
+  ]
+}

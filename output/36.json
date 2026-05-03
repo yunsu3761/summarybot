@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "다권선·다주파 통합 EV WCS·OBC·APM 충전 시스템",
+  "head_messages": [
+    "무선 충전 시스템(WCS, Wireless Charging System), 온보드 충전기(OBC, On-Board Charger), 보조전원 모듈(APM, Auxiliary Power Module) 기능 통합으로 EV 고전압·저전압 배터리 충전 유연성 확보",
+    "다권선 결합과 주파수 튜닝으로 정전압(CV, Constant-Voltage) 출력을 달성하고 모드별 보상 토폴로지와 공유 부품으로 효율과 집적도 향상"
+  ],
+  "purpose": [
+    "EV 내 WCS·OBC·APM을 단일 플랫폼으로 통합해 비용·부피·중량을 줄이고 충전 모드 선택의 자유도 확대",
+    "다주파 운전과 공통 부품 공유로 HV·LV 배터리의 무선·유선 동시·개별 충전 기능 구현"
+  ],
+  "prior_problems": [
+    "WCS·OBC·APM이 분리되어 EV 측 충전 하드웨어의 비용·부피·중량이 증가",
+    "LV 배터리는 외부로부터 직접 유선·무선 충전이 불가하여 다중 변환을 거쳐 효율 저하"
+  ],
+  "proposed_method": [
+    {
+      "title": "통합 자기결합 구조와 다권선 LV 코일 설계",
+      "details": [
+        "EV 측 OBC·HV·LV 코일 적층, 지상 측 WCS 코일과 LCC 보상 인덕터를 페라이트 양면 배치해 결합·디커플링 동시 달성",
+        "코일 크기 300 x 300 mm2, EV–지상 간격 100 mm로 WCS는 루즈 커플링, EV 내부 코일은 스트롱 커플링 형성",
+        "LV 코일은 4개 대칭 권선과 각 권선 3병렬 도체를 병렬 접속해 12도체 구성, 낮은 자기 인덕턴스와 대전류 허용"
+      ]
+    },
+    {
+      "title": "모드별 보상 토폴로지와 다주파 운전",
+      "details": [
+        "WCS-HV는 LCC-S, WCS-LV는 LCC-N로 구성하여 85 kHz에서 공진 설계",
+        "OBC-HV는 S-S, OBC-LV와 APM(HV→LV)은 S-N로 구성하여 각기 245 kHz, 131 kHz, 114 kHz 운전",
+        "상호 인덕턴스 모델을 T·L 변압기 등가로 변환해 누설·여자 인덕턴스와 등가 권수비를 도출"
+      ]
+    },
+    {
+      "title": "주파수 튜닝 기반 CV 출력 제어",
+      "details": [
+        "보상 커패시터와 누설 인덕턴스 공진점을 기준으로 스위칭 주파수를 설정해 부하 무관 전압 형성",
+        "WCS는 85 kHz에서 1차 LCC 전류를 제어해 2차 정류 후 DC 정전압을 유지",
+        "OBC·APM은 전력단 변조와 공진 정합으로 2차 등가 저항 변동에 둔감한 전압 전달 확보"
+      ]
+    },
+    {
+      "title": "모드 전환 로직과 통합 제어 아키텍처",
+      "details": [
+        "HV·LV 잔여 용량, OBC 포트 연결, WCS 결합 상태를 동시 진단해 우선순위 기반 모드 선택",
+        "상태기계로 IDLE↔각 모드 전환을 2단계 시퀀스로 수행해 연속 운전 보장",
+        "공유 스위치·인덕터·커패시터·페라이트를 제어에서 재사용해 회로 재구성 지연 최소화"
+      ]
+    }
+  ],
+  "improvements": [
+    "WCS-HV(모드1)와 OBC-HV(모드3) 효율 각각 95% 초과, 부하 변동 시 CV 출력 유지",
+    "OBC-LV(모드4)와 APM(HV→LV, 모드5) 효율 각각 90% 수준 달성",
+    "WCS-LV(모드2) 최대 효율 80% 달성, 1차 LCC 손실 지배 요인 규명"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Industrial Electronics",
+    "paper_title": "Integrating WCS, OBC, and APM Systems in Electric Vehicle Charging Systems Based on Multiwinding Couplers and Multifrequency Operation",
+    "institution": "Fuzhou University",
+    "doi_or_patent_no": "10.1109/TIE.2025.3600542",
+    "year": "2026",
+    "month": "February"
+  },
+  "representative_figures": [
+    {
+      "page": "2241",
+      "fig_number": "1",
+      "fig_title": "Proposed EV charging integrated system. (a) Diagram. (b) Topology.",
+      "role": "concept"
+    },
+    {
+      "page": "2247",
+      "fig_number": "25",
+      "fig_title": "Calculated and experimental results of voltage, power, and efficiency for mode 3.",
+      "role": "result"
+    }
+  ],
+  "figure_captions_ko": [
+    "모드 1의 IDLE 전이와 정상상태 실험 파형",
+    "모드 3 전압·전력·효율 계산·실험 결과"
+  ]
+}

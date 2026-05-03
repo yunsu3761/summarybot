@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "DAB-PSFB 기반 11 kW 통합 OBC-LDC 충전 시스템",
+  "head_messages": [
+    "EV(Electric Vehicle) 배터리의 G2V·V2G·주행 3모드를 OBC(On-Board Charger)와 LDC(Low-Voltage DC–DC Converter) 통합으로 단일 전력단에서 독립 제어하는 고전력 시스템 구현",
+    "DAB(Dual-Active Bridge) OBC와 PSFB(Phase-Shift Full-Bridge) LDC의 두 변압기 구조 통합, DPS(Dual Phase Shift) 제어와 OR 게이트 SR(Synchronous Rectifier) 구동, 누설 인덕턴스 최적화로 97.1% 효율 달성"
+  ],
+  "purpose": [
+    "11 kW 급에서 HV·LV 배터리를 독립 제어하며 고효율·고전력 밀도를 실현하는 OBC-LDC 통합 구조 구현",
+    "G2V·V2G 양방향에서 동일 조건 효율 극대화를 위한 변압기·제어 변수 최적 설계"
+  ],
+  "prior_problems": [
+    "OBC·LDC 분리 인덕터·변압기 사용과 LDC 2차측 소자 다수로 부피·전도 손실 증가",
+    "양방향 동작 최적화 미흡과 SR 지연 동기화로 바디 다이오드 도통 발생"
+  ],
+  "proposed_method": [
+    {
+      "title": "두 변압기 통합 PSFB LDC와 DAB OBC 결합 구조",
+      "details": [
+        "LDC 출력 인덕터를 변압기 누설로 치환해 자속 경로에 통합",
+        "OBC와 LDC 변압기를 병렬 자화 인덕턴스 모델로 설계해 상호 간섭 분석",
+        "LDC 2차측 전도 소자와 권선을 2개로 축소해 전도 경로 단순화"
+      ]
+    },
+    {
+      "title": "듀얼 위상천이 기반 이중 포트 독립 제어",
+      "details": [
+        "D2로 DAB 전력 이송 제어, D1로 LDC 평균 변압기 전압 제어",
+        "G2V에서 D1이 D2 이상이 되도록 제약을 두어 SR 제어 복잡도 억제",
+        "주행 모드 D2=0에서 VLink 보상 메커니즘 반영해 안정 동작 확보"
+      ]
+    },
+    {
+      "title": "OR 게이트 기반 SR 구동 로직",
+      "details": [
+        "지연다리와 선행다리 스위치 신호를 OR 결합해 SR 게이트 생성",
+        "vT 영전압 구간 전체에서 양쪽 SR 동시 도통으로 바디 다이오드 도통 차단",
+        "D1,D2 관계와 VLink·VHV 변화에 무관한 vT 극성 기반 온오프 기준 적용"
+      ]
+    },
+    {
+      "title": "누설 인덕턴스 분배와 파라미터 최적화",
+      "details": [
+        "LP와 LS를 동일화해 양방향 대칭 손실 분포와 동일 효율 조건 확보",
+        "LT 한계 내에서 k를 0.5로 설정해 스위칭 전류와 rms 전류 최소화",
+        "n 14, LM 1.3 μH, LT 5 μH로 LDC 전압 이득과 리플 조건 동시 충족"
+      ]
+    }
+  ],
+  "improvements": [
+    "G2V·V2G 양방향에서 피크 효율 97.1% 달성, 주행 모드 최소 전압 조건에서 95% 달성",
+    "LDC 2차측 전도 부품 수를 2개로 축소해 전도 손실 경감과 부피 저감",
+    "VLink와 VHV가 동일한 조건에서 G2V·V2G 동일 효율 구현으로 운전 모드 간 성능 대칭 확보"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Industrial Electronics",
+    "paper_title": "Design and Optimization of an 11 kW Integrated OBC-LDC EV Battery Charging System",
+    "institution": "Inha University",
+    "doi_or_patent_no": "10.1109/TIE.2025.3610746",
+    "year": "2025",
+    "month": "11"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": "3872",
+      "fig_number": "Fig. 2",
+      "fig_title": "Circuit diagram. (a) Conventional IBCS. (b) Proposed IBCS."
+    },
+    {
+      "role": "result",
+      "page": "3882",
+      "fig_number": "Fig. 18",
+      "fig_title": "Measured efficiency. (a) In G2V and V2G modes at PTotal = 11 kW. (b) In driving mode."
+    }
+  ],
+  "figure_captions_ko": [
+    "회로도: (a) 기존 IBCS, (b) 제안 IBCS",
+    "측정 효율: (a) G2V/V2G 11 kW, (b) 주행 모드"
+  ]
+}

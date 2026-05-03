@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "모터·기어 통합·하이브리드 냉각·MPC 기반 e-액슬 시스템",
+  "head_messages": [
+    "모터·기어박스 통합, 열관리, 제어 알고리즘 동시 고도화로 전동 액슬 효율과 응답성 확보 목적",
+    "2단 기어, 오일–워터 하이브리드 냉각, 도로 경사 프리뷰 모델예측제어(MPC, Model Predictive Control) 결합으로 에너지 약 10% 절감과 과도 응답 30% 가속 실현"
+  ],
+  "purpose": [
+    "신에너지차 전동 액슬의 구동 효율, 질량, 열안정성, 제어 응답을 동시 향상하는 설계·제어 프레임 구현",
+    "하드웨어·열·소프트웨어 통합 최적화를 통해 배터리 증대 없이 주행거리 확장"
+  ],
+  "prior_problems": [
+    "단일 속도 기어박스의 고속 효율 저하와 다단 기어박스의 중량·부피 증가로 시스템 최적화 한계",
+    "고부하 열집중으로 성능 열화와 제어 지연, 표준화된 극한 온도 내구 평가 부재"
+  ],
+  "proposed_method": [
+    {
+      "title": "모터–기어박스 통합 설계와 경량 구조",
+      "details": [
+        "영구자석 동기모터(PMSM, Permanent Magnet Synchronous Motor)와 2단 기어 결합으로 고속 효율 5~7% 향상",
+        "유성기어 토폴로지 최적화로 질량 15~20% 절감과 기어 메싱 소음 8~10 dB 저감",
+        "탄소섬유강화폴리머(CFRP, Carbon Fiber Reinforced Polymer) 하우징과 티타늄 매트릭스 로터로 경량·강성 확보"
+      ]
+    },
+    {
+      "title": "액슬 공동 열관리 시스템 설계",
+      "details": [
+        "오일–워터 하이브리드 냉각으로 모터·기어 온도 변동 ±3°C 유지와 열교환 25% 향상",
+        "상변화물질(PCM, Phase Change Material) 내장 히트싱크로 피크 온도 12~15°C 저감",
+        "그래핀 보강 열인터페이스재(TIM, Thermal Interface Material)와 나노냉매로 열전달 40~50% 및 28% 향상"
+      ]
+    },
+    {
+      "title": "예측 제어·분산 제어 기반 소프트웨어",
+      "details": [
+        "도로 경사 프리뷰 모델예측제어(MPC)로 산악 주행 에너지 8~10% 절감과 변속 충격 완화",
+        "이더넷 TSN(Time Sensitive Networking) 동기화로 제어기 간 시간 편차 100 μs 이하 확보",
+        "심층 강화학습(DRL, Deep Reinforcement Learning) 기반 변속 로직으로 변속 합리성 30%와 승차감 15% 개선"
+      ]
+    },
+    {
+      "title": "제조·신뢰성·유지보수 통합 전략",
+      "details": [
+        "스탬핑 마이크로채널 쿨러로 가공 비용을 CNC 대비 1/4로 절감하며 대량 생산 용이",
+        "선택적 레이저 용융(SLM, Selective Laser Melting) 일체형 스테이터로 방열 20%와 전력밀도 12~15% 향상",
+        "디지털 트윈 기반 예지정비로 고장 2~3개월 선제 예측과 비용 25~30% 및 다운타임 40% 절감"
+      ]
+    }
+  ],
+  "improvements": [
+    "2단 기어박스와 경량 구조 적용으로 고속 효율 5~7% 증가, 액슬 질량 15~20% 감소와 소음 8~10 dB 저감",
+    "오일–워터 하이브리드 냉각과 고성능 TIM로 온도 변동 ±3°C 유지, 열전달 효율 25% 향상과 추가 40~50% 개선",
+    "MPC·분산 제어·DRL로 산악 구간 소비 8~10% 감소, 토크 응답 지연 약 30% 감소, 과도 응답 30% 가속"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "Frontiers in Mechanical Engineering",
+    "paper_title": "Electric drive axle systems in new energy vehicles",
+    "institution": "Shandong Huayu University of Technology",
+    "doi_or_patent_no": "10.3389/fmech.2026.1745639",
+    "year": "2026",
+    "month": "01"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 1,
+      "fig_number": "Figure 1",
+      "fig_title": "Electric-drive-axle research landscape overview"
+    },
+    {
+      "role": "result",
+      "page": 2,
+      "fig_number": "Figure 2",
+      "fig_title": "Performance gains of multi-speed gearboxes and hybrid cooling"
+    }
+  ],
+  "figure_captions_ko": [
+    "전기 구동 차축 연구 지형 개요도",
+    "멀티스피드 기어박스·하이브리드 냉각 성능 비교"
+  ]
+}

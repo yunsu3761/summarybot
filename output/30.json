@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "OW-PMSM 기반 듀얼배터리 일체형 충전 제어 기술",
+  "head_messages": [
+    "전기차 탑재 OW-PMSM(Open-End Winding Permanent Magnet Synchronous Motor) 구동계 재구성으로 고전압·저전압 배터리 동시 충전과 충전 토크 제거 구현",
+    "EIC(Eight-State Interleaved Control)와 비대칭 전류 분배로 q축 상쇄를 유도해 PF>0.99, THD<3%, 평균 76.3% 토크 리플 억제 달성"
+  ],
+  "purpose": [
+    "듀얼 배터리 동시 충전이 가능한 탑재형 IDBC(Integrated Dual-Battery Charger) 구현과 충전 중 발생하는 OW-PMSM 토크 제거",
+    "추가 하드웨어 최소화로 소형·경량 충전 구조를 확보하고 실차 적용 가능한 제어 프레임워크 제시"
+  ],
+  "prior_problems": [
+    "모터 권선을 필터로 재활용하는 IBC는 충전 전류로 인한 전자기 토크·진동·소음 증가 문제",
+    "듀얼 배터리 충전은 추가 DC-DC와 변압기 등 부품 증가로 중량·부피·효율 저하"
+  ],
+  "proposed_method": [
+    {
+      "title": "OW-PMSM 기반 IDBC 토폴로지 재구성",
+      "details": [
+        "듀얼 인버터·개방권선을 브릿지리스 PFC(Power Factor Correction)와 병렬 벅으로 재구성",
+        "분할 권선을 필터 인덕터로 다중화해 하드웨어 추가 없이 구현",
+        "K1·G1·G2로 구동모드·충전모드 전환 및 단상 AC 연계"
+      ]
+    },
+    {
+      "title": "충전 토크 모델링과 비대칭 전류 분배",
+      "details": [
+        "dq축 등가 전류와 영구자석 토크 지배 항을 도출해 토크 성분 규명",
+        "로터 위치 의존 q축 전류를 2상 권선 전류 비대칭 분배로 상쇄",
+        "특이각 전류 폭주를 제한기 적용과 로터 자화 시프트로 회피"
+      ]
+    },
+    {
+      "title": "8상태 인터리브드 브릿지리스 PFC 제어",
+      "details": [
+        "반주기마다 상태 I~IV를 교번해 ib1·ic1 독립 전류 제어 구현",
+        "D1·D2·D3 듀티로 ig, ib1, ic1을 분리 제어하는 인터리브드 구동",
+        "상태 전이에 따른 충전·자유순환 경로 설계로 전류 기울기 제어"
+      ]
+    },
+    {
+      "title": "실시간 동기화 및 전류 루프 설계",
+      "details": [
+        "SOGI-PLL(Second-Order General Integrator Phase-Locked Loop)로 그리드 위상 동기",
+        "메인 배터리 전압 PI로 ig_ref 생성, θ 기반 ib1_ref·ic1_ref 산출",
+        "준 PR(Proportional-Resonant) 전류 제어로 즉시 응답과 정현 추종 확보"
+      ]
+    }
+  ],
+  "improvements": [
+    "그리드 PF>0.99, 입력 전류 THD 2.82%(시뮬), <3%(실험)로 단상 연계 품질 확보",
+    "토크 리플 최소 50.6% 억제, 평균 76.3% 억제, 3.84 N·m→0.83 N·m, 0.66 N·m→0.08 N·m 달성",
+    "듀얼 배터리 168 V/42 V에서 200 W/50 W 충전, 효율 약 86%, 총 손실 32 W로 실장 가능성 확인"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Power Electronics",
+    "paper_title": "The Torque Elimination Control Strategy for Integrated Dual-Battery Charger of Electric Vehicle based on Open-End Winding Permanent Magnet Synchronous Motor",
+    "institution": "Nanjing University of Aeronautics",
+    "doi_or_patent_no": "10.1109/TPEL.2024.3395520",
+    "year": "2024",
+    "month": "April"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": 10058,
+      "fig_number": "Fig. 2",
+      "fig_title": "Schematic diagram of the proposed IDBC system."
+    },
+    {
+      "role": "result",
+      "page": 10065,
+      "fig_number": "Fig. 16",
+      "fig_title": "Torque ripple variation of OW-PMSM with respect to the rotor positions."
+    }
+  ],
+  "figure_captions_ko": [
+    "제안된 IDBC 시스템의 개략도",
+    "회전자 위치에 따른 OW-PMSM 토크 리플 변화"
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "뉴트럴 탭 활용 비대칭 하프브리지 스위치드 릴럭턴스 모터 삼상 통합 충전 시스템",
+  "head_messages": [
+    "SRM(Switched Reluctance Motor) 권선과 AHB(Asymmetric Half Bridge) 구동을 재사용해 IOBC(Integrated On-Board Charger)로 삼상 PFC(Power Factor Correction) 충전과 무토크 주차 구현 목적",
+    "하이브리드 정적·동적 피드포워드 디커플링과 준공진(quasi-resonant) 제어로 유도성 비대칭 기인 삼상 전류 불평형 90% 저감 및 DC 전압 이중주파 리플 억제"
+  ],
+  "purpose": [
+    "추가 스위치·릴레이·인덕터 없이 뉴트럴 탭만으로 삼상 PFC 충전 IOBC를 구현",
+    "유도성 비대칭 하에서 평균 토크 0점 주차와 전류 평형을 동시에 달성"
+  ],
+  "prior_problems": [
+    "기존 AHB 기반 SRM IOBC는 단상 충전에 머물거나, 삼상 구현 시 다수의 추가 소자와 복잡한 제어가 필요",
+    "SRM 권선을 필터 인덕터로 직접 재사용 시 삼상 인덕턴스 비대칭으로 전류 불평형과 DC 링크 이중주파 리플 발생"
+  ],
+  "proposed_method": [
+    {
+      "title": "AHB 기반 삼상 듀얼-부스트 IOBC 토폴로지",
+      "details": [
+        "모터 뉴트럴 포인트를 삼상 그리드에 접속해 권선을 입력 필터 인덕터로 재활용",
+        "기존 AHB 구동 스위치와 권선만으로 삼상 듀얼-부스트 PFC 정류 구성",
+        "상하암 단락 위험 제거 및 데드타임 유발 저차 고조파 억제로 THD(Total Harmonic Distortion) 저감"
+      ]
+    },
+    {
+      "title": "무평균 토크 보장 로터 위치 선정",
+      "details": [
+        "SVPWM(Space Vector Pulse Width Modulation) 전류 파형 기반 합성 토크 모델 수립",
+        "두 상 인덕턴스 기울기 반대·한 상 영기울기 조건에서 평균 토크 0점 도출",
+        "포화 포함 유도성 비대칭 정량화로 최대·최소 인덕턴스 위치 선택 규칙 제시"
+      ]
+    },
+    {
+      "title": "하이브리드 정정·동적 피드포워드 디커플링 제어",
+      "details": [
+        "dq 좌표 모델에서 인덕턴스 불평형의 2배주파 결합 전압 교란을 해석",
+        "Lm·Lcos2n·Lsin2n과 위상 φ를 이용해 정적·동적 보상 항을 생성",
+        "PI(Proportional-Integral) 전류 제어와 SVPWM에 보상 항 주입해 음수수열 전류 억제"
+      ]
+    },
+    {
+      "title": "2ω 준공진 보강 및 강건 설계",
+      "details": [
+        "2ω 대역 준공진 보상기를 병렬 삽입해 이중주파 음수수열 성분을 능동 제거",
+        "지배극 근사로 지연을 등가화해 대역폭 선정과 위상여유 검증 절차 정립",
+        "±50% 인덕턴스 편차 보드·나이퀴스트 해석으로 안정성 및 견실도 입증"
+      ]
+    }
+  ],
+  "improvements": [
+    "삼상 전류 불평형률 ε: 20.4%→1.1%로 94.6% 감소, 최대 인덕턴스 위치 10.1%→1.0%로 90% 감소",
+    "비대칭 전원 Ua=21V, Ub=23V, Uc=26V 조건에서 ε 92.4% 추가 저감",
+    "위상 여유 58°, L ±50%에서 45°~65° 유지와 이득 여유 무한, 시스템 효율 93% 및 역률 1에 근접"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Power Electronics",
+    "paper_title": "An Integrated On-Board Charging Solution for EVs Driven by Switched Reluctance Motors Considering Inductance Asymmetry",
+    "institution": "Nanjing University of Aeronautics",
+    "doi_or_patent_no": "10.1109/TPEL.2026.3653048",
+    "year": "2026",
+    "month": "01"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": "10166",
+      "fig_number": "Fig. 1",
+      "fig_title": "Topology of proposed SRM IOBC"
+    },
+    {
+      "role": "result",
+      "page": "10176",
+      "fig_number": "Fig. 20",
+      "fig_title": "Unbalance factor of three-phase input currents"
+    }
+  ],
+  "figure_captions_ko": [
+    "Phase-C 최대 인덕턴스에서의 충전 전압과 토크 파형",
+    "Phase-C 최소 인덕턴스에서의 삼상 입력전류 THD 스펙트럼"
+  ]
+}

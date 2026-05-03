@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "분할 권선·듀얼 인버터 기반 통합 삼상 충전 시스템",
+  "head_messages": [
+    "듀얼 인버터 구동계를 활용해 추가 전력전자 없이 EV(Electric Vehicle) 통합 삼상 온보드 충전 기능 확보 목적",
+    "분할 권선 기계와 CM(Common-Mode) 전압 0을 보장하는 SVPWM(Space-Vector Pulse Width Modulation)으로 충전 전류 제어와 누설 전류 억제 및 무토크 운전 달성"
+  ],
+  "purpose": [
+    "추가 전력전자 없이 구동계를 활용한 비절연 통합 삼상 온보드 충전 실현",
+    "CM(Common-Mode) 누설전류 억제와 무토크 충전 운전으로 안전 규격 충족"
+  ],
+  "prior_problems": [
+    "기존 통합 충전은 공통모드 전류로 누설 전류가 커 GFCI 오동작과 안전 규격 충족 실패",
+    "단일 인버터·접점 전환 방식은 토크 발생, 접촉기 비용 증가, 제어 복잡도 증가"
+  ],
+  "proposed_method": [
+    {
+      "title": "듀얼 인버터·분할 권선 기반 통합 충전 토폴로지",
+      "details": [
+        "각 상 스테이터를 상하 반권선으로 분할하고 분할점에 삼상 그리드를 직접 접속",
+        "두 인버터를 개별 DC 링크로 구동해 기계 내부 순환 영순서 전류 경로 제거",
+        "차체 접지와 y 커패시턴스 경로를 포함한 누설 전류 경로를 회로 수준에서 고려"
+      ]
+    },
+    {
+      "title": "일반화 Clarke 변환 기반 4 서브시스템 분해 모델",
+      "details": [
+        "충전, 구동, 영순서, 공통모드의 4 서브시스템으로 전류·전압 동작을 개념적으로 분리",
+        "충전 공간벡터는 그리드 전류 제어에, 구동 공간벡터는 자속·토크 생성에 독립 사용",
+        "모델 상 상호 디커플링을 보장해 각 채널의 제어 목표를 충돌 없이 설정"
+      ]
+    },
+    {
+      "title": "CM 전압 0 보장 CH-SVPWM 변조 로직",
+      "details": [
+        "공통모드 전압이 0이 되는 스위칭 상태 집합만 사용해 누설 전류 근본 차단",
+        "대칭 페어 상태의 체류 시간을 동일 분배해 평균 구동 전압과 영순서 전압 상쇄",
+        "섹터별 상태 시퀀스와 체류 시간 해석으로 참조 충전 전압의 주기 평균 정확 합성"
+      ]
+    },
+    {
+      "title": "CC–CV 충전 제어와 전류 제어 구조",
+      "details": [
+        "SRF(Stationary Reference Frame) 전압 추정과 RRF(Rotating Reference Frame) 전류 제어 적용",
+        "BMS(Battery Management System) 지령으로 CC–CV 전환, dq 전류 중 q축 0으로 역률 1 유지",
+        "그리드 전압 피드포워드와 참조 충전 전압 생성 후 CH-SVPWM에 전달"
+      ]
+    }
+  ],
+  "improvements": [
+    "그리드 CM 전류 2.0 Arms 대비 65.4 mArms로 약 30배 감소, CM 전압 0 제약과 대칭 체류 시간으로 고주파 누설 경로 억제",
+    "표준 인체 모델 필터 출력 308 MIU 대비 12.6 MIU로 저감, 20 MIU 한계 내 동작 입증",
+    "7.2 kW, 20 Arms, 역률 1의 CC–CV 및 G2V·V2G 운전에서 토크 0 유지와 정현파 전류 달성"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "IEEE Transactions on Power Electronics",
+    "paper_title": "Dual-Inverter-Integrated Three-Phase EV Charger Based on Split-Phase Machine",
+    "institution": "University of Toronto",
+    "doi_or_patent_no": "10.1109/TPEL.2022.3187568",
+    "year": "2022",
+    "month": "June"
+  },
+  "representative_figures": [
+    {
+      "role": "concept",
+      "page": "15179",
+      "fig_number": "Fig. 6",
+      "fig_title": "Control architecture used during charging operation of the proposed integrated drivetrain charger"
+    },
+    {
+      "role": "result",
+      "page": "15183",
+      "fig_number": "Fig. 16",
+      "fig_title": "Experimentally measured CM leakage current reduction by the proposed modulation technique"
+    }
+  ],
+  "figure_captions_ko": [
+    "충전 운전 시 통합 구동계 충전기 제어 아키텍처",
+    "제안 변조 기법의 CM 누설전류 실험 측정"
+  ]
+}

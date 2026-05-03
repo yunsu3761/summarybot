@@ -1,0 +1,81 @@
+{
+  "doc_type": "paper",
+  "title": "IMD 통합수준 정량화와 컨버터·열·EMI 설계 기술",
+  "head_messages": [
+    "전기차·항공 추진용 통합 모터 드라이브(IMD, Integrated Motor Drive)의 구조·컨버터·열·EMI(전자기 간섭) 핵심 기술 정리와 통합수준 정량화 방법 정립",
+    "모듈러 IMMD(Integrated Modular Motor Drive), LCL(L–C–L) 필터 내장, DC-link 저감, WBG(와이드밴드갭) 소자 적용, 열·EMI 공동설계로 소형·고밀도·고효율 구현"
+  ],
+  "purpose": [
+    "고집적 전동 구동에서 크기·중량·손실을 줄이면서 신뢰성과 전자파 적합성을 확보하는 IMD 설계 프레임워크 제시",
+    "다양한 응용에서 비교·선정 가능하도록 IMD 통합수준을 수치화하는 평가 기준 마련"
+  ],
+  "prior_problems": [
+    "모터·컨버터 열 결합과 제한된 내부 공간으로 인한 냉각 설계 난이도 증가 및 유지보수 비용 상승",
+    "DC-link 커패시터 체적·높이와 EMI로 인한 소형화 한계, 케이블 기생 성분에 의한 절연 스트레스"
+  ],
+  "proposed_method": [
+    {
+      "title": "IMD 통합수준 정량평가 모델",
+      "details": [
+        "모터 전력·체적·컨버터 배치·열통합·LC 최적화·WBG 적용·모듈화 등 핵심 지표 선정",
+        "지표를 0~1 구간으로 정규화하고 응용별 중요도 가중치로 통합지수 산출",
+        "전문가 단계화로 배치 방식 등 정성 항목을 수치화해 설계 대안 비교에 활용"
+      ]
+    },
+    {
+      "title": "모듈러 IMMD 전력구조와 제어 동기화",
+      "details": [
+        "극당 모듈에 인버터·제어를 통합해 고장 격리와 제조·조립 용이성 확보",
+        "직렬 DC 버스에 능동 전압 밸런싱을 적용해 모듈 전압 균등과 입력 전류 저감",
+        "게이트 인터리빙·캐리어 위상 시프트로 리플 전류 억제와 커패시터 요구량 완화"
+      ]
+    },
+    {
+      "title": "DC-link·수동소자 소형화를 위한 컨버터 설계",
+      "details": [
+        "WBG 소자(와이드밴드갭, SiC·GaN)로 스위칭 주파수 상향해 수동소자 체적 축소",
+        "전류원 인버터 등 토폴로지 선택으로 DC 커패시터 의존도와 전압 요구 저감",
+        "보조컨버터 적용으로 입력 THD(Total Harmonic Distortion) 저감과 불평형 전원 견고화"
+      ]
+    },
+    {
+      "title": "열 해석 기반 냉각 구조와 EMI 저감·필터 통합",
+      "details": [
+        "TRN(Thermal Resistance Network) 기반 열 경로 모델링과 임계부 온도 보호 로직 연계",
+        "FEA(Finite Element Analysis)·CFD(Computational Fluid Dynamics)로 유동·온도장 해석",
+        "LCL 필터를 스테이터 보조 슬롯·PCB 권선 등으로 일체화하고 차폐·접지·포팅으로 EMI 억제"
+      ]
+    }
+  ],
+  "improvements": [
+    "통합 설계로 모터-컨버터 케이블 제거와 하우징 공유에 따른 총비용 20~40% 절감",
+    "캐리어 위상 시프트·게이트 인터리빙 적용 시 DC-link 리플 전류 약 75% 저감으로 커패시터 체적·높이 요구 감소",
+    "테슬라 모델3 사례에서 모터 출력 202 kW, 시스템 파워밀도 2.2 kW/kg 달성으로 고집적 설계 유효성 입증"
+  ],
+  "paper_info": {
+    "journal_or_patent_office": "Energies",
+    "paper_title": "Overview of Integrated Electric Motor Drives: Opportunities and Challenges",
+    "institution": "City University of Hong Kong",
+    "doi_or_patent_no": "10.3390/en15218299",
+    "year": "2022",
+    "month": "11"
+  },
+  "representative_figures": [
+    {
+      "page": 16,
+      "fig_number": "Figure 12",
+      "fig_title": "IMDs Opportunities and Challenges",
+      "role": "concept"
+    },
+    {
+      "page": 10,
+      "fig_number": "Figure 5",
+      "fig_title": "Comparison of wide-band semiconductor performance",
+      "role": "result"
+    }
+  ],
+  "figure_captions_ko": [
+    "",
+    ""
+  ]
+}
