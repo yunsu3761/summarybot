@@ -479,15 +479,19 @@ def start_summarize():
                         stem = str(doc_idx)
                         next_unmatched += 1
 
-                    if not text and d.get("source_path") and d["source_type"] == "pdf":
+                    if d["source_type"] == "pdf" and d.get("source_path"):
+                        # §9: PDF는 파일당 한 번만 open
+                        import time as _time_mod
+                        _t_srv = _time_mod.time()
                         with fitz.open(d["source_path"]) as doc:
-                            text = extract_text(doc)
+                            if not text:
+                                text = extract_text(doc)
                             # Step 1: 텍스트 LLM 먼저 호출 → representative_figures 확보
                             precomputed_raw = call_llm(text, model=model)
                             # 논문만 fig_title 전달 — 특허는 Vision LLM이 독립 판단
                             _is_patent = precomputed_raw.get("doc_type") == "patent"
                             rep_figs = [] if _is_patent else (precomputed_raw.get("representative_figures") or [])
-                            # Step 2: Vision LLM에 fig_title 전달
+                            # Step 2: Vision LLM에 fig_title 전달 (같은 fitz.open 블록 내)
                             try:
                                 candidates = extract_images(doc)
                                 concept_fig, effect_fig, vision_caps = pick_two_figures_with_vision(
@@ -496,22 +500,6 @@ def start_summarize():
                                 )
                             except Exception:
                                 vision_caps = ["", ""]
-                    elif text and d["source_type"] == "pdf" and d.get("source_path"):
-                        # Step 1: 텍스트 LLM 먼저 호출 → representative_figures 확보
-                        precomputed_raw = call_llm(text, model=model)
-                        # 논문만 fig_title 전달 — 특허는 Vision LLM이 독립 판단
-                        _is_patent = precomputed_raw.get("doc_type") == "patent"
-                        rep_figs = [] if _is_patent else (precomputed_raw.get("representative_figures") or [])
-                        # Step 2: Vision LLM에 fig_title 전달
-                        try:
-                            with fitz.open(d["source_path"]) as doc:
-                                candidates = extract_images(doc)
-                                concept_fig, effect_fig, vision_caps = pick_two_figures_with_vision(
-                                    candidates, text, model=model,
-                                    representative_figures=rep_figs,
-                                )
-                        except Exception:
-                            vision_caps = ["", ""]
                     elif d["source_type"] == "url":
                         # URL 특허: 텍스트 LLM 먼저 호출
                         precomputed_raw = call_llm(text, model=model)

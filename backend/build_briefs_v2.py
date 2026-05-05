@@ -87,6 +87,65 @@ SLIDE_W: Optional[int] = None
 SLIDE_H: Optional[int] = None
 
 # ============================================================
+# Timer utility (요청서 §9-3)
+# ============================================================
+def _timer_log(label: str, start: float) -> float:
+    """단계별 소요시간 로그 출력. 현재 시각을 반환."""
+    elapsed = time.time() - start
+    print(f"[TIMER] {label}: {elapsed:.2f}s")
+    return time.time()
+
+
+# ============================================================
+# Figure category classification (요청서 §3~§5)
+# ============================================================
+_METHOD_KEYWORDS = [
+    "system", "structure", "circuit", "architecture", "proposed", "method",
+    "framework", "model", "block diagram", "flowchart", "schematic",
+    "control structure", "configuration", "concept", "mechanism", "design",
+    "topology", "layout", "overview", "pipeline", "module", "flow", "diagram",
+    # 한국어
+    "시스템", "구조", "회로", "아키텍처", "제안", "프레임워크", "모델",
+    "블록도", "흐름도", "개략도", "제어", "구성", "컨셉", "메커니즘", "설계",
+]
+_RESULT_KEYWORDS = [
+    "result", "results", "experiment", "experimental", "test", "validation",
+    "performance", "comparison", "efficiency", "error", "loss", "accuracy",
+    "waveform", "simulation", "hil", "measurement", "evaluation", "improvement",
+    "response", "spectrum", "bode", "histogram", "scatter", "bar chart",
+    # 한국어
+    "결과", "실험", "검증", "성능", "비교", "효율", "오차", "손실",
+    "정확도", "파형", "시뮬레이션", "측정", "평가", "개선효과",
+]
+
+
+def _classify_figure_category(caption: str) -> Tuple[str, str, float]:
+    """caption 키워드 기반 figure 카테고리 분류.
+
+    Returns: (category, role_candidate, selection_score)
+      - category: 'method_or_concept' | 'result_or_effect' | 'other'
+      - role_candidate: 'top_image' | 'bottom_image' | ''
+      - selection_score: 0.0~1.0 (키워드 매칭 밀도)
+    """
+    if not caption:
+        return "other", "", 0.0
+    cap_lower = caption.lower()
+    method_score = sum(1 for kw in _METHOD_KEYWORDS if kw in cap_lower)
+    result_score = sum(1 for kw in _RESULT_KEYWORDS if kw in cap_lower)
+    total_kw = len(_METHOD_KEYWORDS) + len(_RESULT_KEYWORDS)
+    max_score = max(method_score, result_score)
+    density = min(1.0, max_score / max(total_kw * 0.05, 1.0))  # normalize
+
+    if method_score > result_score:
+        return "method_or_concept", "top_image", density
+    elif result_score > method_score:
+        return "result_or_effect", "bottom_image", density
+    elif method_score > 0:  # tied but non-zero
+        return "method_or_concept", "top_image", density
+    return "other", "", 0.0
+
+
+# ============================================================
 # JSON Schema for unified 1-stage output
 # ============================================================
 BRIEF_SCHEMA: Dict[str, Any] = {
@@ -942,6 +1001,26 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
                              or _parse_fig_number_from_caption(nearest_caption)
                              or "")
 
+                # 요청서 §4,§6 — category 분류 및 figure_number 검증
+                _cat, _role, _score = _classify_figure_category(nearest_caption)
+                # image_figure_number: 이미지 bbox 매칭에서 얻은 figure_number
+                _img_fig_num = figure_number_str or (f"Fig. {fig_label}" if fig_label else "")
+                # caption_figure_number: 캡션 텍스트에서 파싱한 figure_number
+                _cap_fig_num_raw = _parse_fig_number_from_caption(nearest_caption)
+                _cap_fig_num = f"Fig. {_cap_fig_num_raw}" if _cap_fig_num_raw else ""
+
+                # §6: image_figure_number와 caption_figure_number 불일치 시 경고
+                _fig_mismatch = False
+                if _img_fig_num and _cap_fig_num:
+                    if _normalize_fig_number(_img_fig_num) != _normalize_fig_number(_cap_fig_num):
+                        _fig_mismatch = True
+                        print(f"  [WARN] figure-caption mismatch: image={_img_fig_num}, "
+                              f"caption={_cap_fig_num}, page={pi+1}. Rejecting caption.")
+                        # 매칭 오류 시 캡션을 제거하고 figure_number만 유지
+                        nearest_caption = ""
+                        caption_hint = page_caption_hint or ""
+                        caption_source = "mismatch_cleared"
+
                 figure_index_counter += 1
                 candidates.append({
                     "page": pi + 1,
@@ -964,9 +1043,17 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
                     "crop_source": "embedded_image",
                     "contains_real_figure": True,    # embedded image는 실제 raster image
                     "contains_body_text": False,
+                    "is_text_only": False,
                     "surrounding_text": surrounding_text,
                     "fig_label": fig_label,           # 순수 숫자 (예: "3", "1a")
-                    "figure_number": figure_number_str or (f"Fig. {fig_label}" if fig_label else ""),
+                    "figure_number": _img_fig_num,
+                    # 요청서 §6 — 매칭 검증용
+                    "image_figure_number": _img_fig_num,
+                    "caption_figure_number": _cap_fig_num,
+                    # 요청서 §4 — category 분류
+                    "category": _cat,
+                    "role_candidate": _role,
+                    "selection_score": round(_score, 3),
                     "hash": img_hash,                 # 외부 명세 호환
                     "_img_hash": img_hash,            # 기존 코드 호환 (제거하지 않음)
                     "image_hash": img_hash,           # 요청서 §4 명시 키
@@ -1403,6 +1490,8 @@ def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: Li
                 continue
 
             img_hash = hashlib.md5(png_bytes).hexdigest()
+            _crop_cat, _crop_role, _crop_score = _classify_figure_category(cap["text"])
+            _crop_fig_num = cap.get("figure_number", "")
             out.append({
                 "page": pi + 1,
                 "page_number": pi + 1,
@@ -1423,10 +1512,16 @@ def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: Li
                 "crop_source": crop_source,
                 "contains_real_figure": True,
                 "contains_body_text": False,
+                "is_text_only": False,
                 "visual_density": round(density, 3),
                 "surrounding_text": "",
                 "fig_label": fignum,
-                "figure_number": cap.get("figure_number", ""),
+                "figure_number": _crop_fig_num,
+                "image_figure_number": _crop_fig_num,
+                "caption_figure_number": _crop_fig_num,  # page_crop은 caption 기반이므로 일치
+                "category": _crop_cat,
+                "role_candidate": _crop_role,
+                "selection_score": round(_crop_score, 3),
                 "hash": img_hash,
                 "_img_hash": img_hash,
                 "image_hash": img_hash,
@@ -1872,55 +1967,45 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
     # (fig_title_context는 앞서 이미 정의됨)
 
     CAPTION_INSTRUCTION = (
-        "아래는 문서에서 추출한 원본 이미지들입니다. "
-        "첨부된 문서 내용과 각 이미지의 **주변 문맥(Surrounding Text)** 및 **원문 캡션(original_caption)**을 분석하여, 정확히 2개의 대표 이미지를 선정하세요. (새로운 이미지를 생성하지 마세요)\n\n"
-        "① [Concept 이미지]: 본문의 '제안 기술(Proposed Technology)' 또는 핵심 아키텍처/회로도/알고리즘/시스템 구성을 가장 잘 설명하는 대표 도면 1개\n"
-        "② [Result 이미지]: 본문의 '개선 효과(Improvement Effect)' 또는 실험 결과/성능 평가/비교 그래프를 가장 잘 보여주는 대표 도면 1개\n\n"
-        "**[매우 중요] 중복 선택 절대 금지 (요청서 §7,§9)**:\n"
+        "PDF에서 추출된 figure 후보 리스트가 제공됩니다.\n"
+        "각 후보에는 image_path, page_number, figure_number, original_caption, category, metadata가 포함됩니다.\n\n"
+        "대표 figure는 정확히 2개만 선택하세요.\n\n"
+        "1. concept_index (top_image):\n"
+        "제안 기술의 구체적인 방법, 기술 컨셉, 구조, 아키텍처, 회로, 모델, 제어 구조, 시스템 구성을 가장 잘 설명하는 figure를 선택하세요.\n"
+        "category='method_or_concept'인 후보를 우선 선택하세요.\n\n"
+        "2. result_index (bottom_image):\n"
+        "개선효과, 실험 결과, 검증 결과, 성능 비교, 효율, 오차, 파형, 평가 결과를 가장 잘 보여주는 figure를 선택하세요.\n"
+        "category='result_or_effect'인 후보를 우선 선택하세요.\n\n"
+        "**[매우 중요] 선택 규칙:**\n"
         "- concept_index와 result_index는 반드시 서로 다른 번호여야 합니다.\n"
-        "- image_hash가 같은 후보 두 개를 선택하지 마세요.\n"
-        "- figure_number(예: Fig. 1)가 같은 후보 두 개를 선택하지 마세요.\n"
-        "- original_caption이 동일한 후보 두 개를 선택하지 마세요.\n"
-        "- 시각적으로 동일하거나 거의 같은 이미지(같은 그래프의 단순 확대/반복/같은 figure의 sub-image)는 중복 선택하지 마세요.\n"
-        "- 두 이미지는 반드시 서로 다른 의미·용도를 가진 figure여야 합니다 (예: 구조도 + 결과 그래프).\n"
-        "- 같은 figure group 안의 (a),(b),(c) 조각을 따로따로 선택하지 마세요. 같은 caption 아래 묶인 figure 전체가 하나의 단위입니다.\n"
-        "- 텍스트만 있는 영역(본문 문단, 표 텍스트 등)은 절대 선택하지 마세요. 반드시 실제 figure visual content(그림/그래프/사진/도식)가 포함된 후보만 선택하세요.\n"
+        "- 중복 figure를 선택하지 마세요.\n"
+        "- 텍스트만 있는 후보는 선택하지 마세요.\n"
+        "- figure_number, original_caption, group_bbox, image_hash가 같은 후보를 중복 선택하지 마세요.\n"
+        "- caption을 추측하지 마세요. 반드시 제공된 original_caption만 사용하세요.\n"
+        "- 선택된 이미지와 caption은 반드시 같은 figure_number여야 합니다.\n"
+        "- image_figure_number와 caption_figure_number가 다르면 해당 후보는 제외하세요.\n"
         "- original_caption이 비어있는 후보보다 캡션이 정상적으로 추출된 후보를 우선 선택하세요.\n\n"
         + fig_title_context +
-        "\n**캡션 작성 규칙 (반드시 준수, 요청서 §3-2,§8)**:\n"
-        "- **반드시 제공된 original_caption(PDF 원문에서 추출)만 한국어로 번역하여 사용하세요.**\n"
-        "- **새로운 캡션을 생성하거나 추측하지 마세요.**\n"
-        "- **번역 결과에서 Fig. 번호 (Fig. 1., Figure 2., 그림 3 등)는 반드시 유지하세요.**\n"
-        "  예: 'Fig. 1. Circuit diagram of 3ph LCL-filtered VSC IOBC system'\n"
-        "      → 'Fig. 1. 3상 LCL 필터 VSC IOBC 시스템 회로도'\n"
-        "- original_caption이 없거나 비어있을 때만 주변 문맥(Surrounding Text)을 근거로 도면이 설명하는 핵심 기술적 가치를 1~2줄로 요약하세요.\n"
-        "- **[중요] original_caption도 없고 주변 문맥도 부족하여 캡션을 확실히 알 수 없는 경우, 임의로 만들지 말고 빈 문자열(\"\")을 반환하세요.**\n"
-        "- 단, 효과, 성능 향상, 개선 결과만을 서술하는 문장이 아니어야 합니다.\n"
-        "- '~향상', '~개선', '~감소', '~증가' 등 효과·결과를 나타내는 말로 캡션을 끝내지 마세요.\n"
-        "- **중요: 반드시 명사형으로 끝내야 합니다.**\n"
-        "- **[금지 표현]** '본 발명은', '본 발명의', '본 연구의', '이 도면은' 등의 표현은 절대 사용 금지.\n"
-        "- '그림1', '그림2', 'Figure 1', 'Figure 2' 처럼 번호만 적힌 라벨은 캡션으로 쓰지 말 것 — 반드시 그림 내용 설명을 포함해야 함.\n"
-        "- 예시 (올바른 캡션): 'Fig. 5. 적용형 DC-LINK 공통 레그 구조를 활용한 듀얼 인버터 기반 트랙션-보조전원 통합 회로도'\n"
-        "- 예시 (잘못된 캡션): '본 발명의 효율성 향상 그래프' (금지 표현 + 효과 서술이므로 금지)\n\n"
-        "출력은 반드시 다음 JSON 형식으로 하세요 (마크다운 코드블록 없이):\n"
-        '{\n  "concept_index": 0,\n  "concept_caption": "컨셉 이미지 한국어 캡션 (Fig. 번호 유지, 없으면 빈 문자열)",\n  "result_index": 1,\n  "result_caption": "결과 이미지 한국어 캡션 (Fig. 번호 유지, 없으면 빈 문자열)"\n}'
+        "\n출력은 반드시 다음 JSON 형식으로 하세요 (마크다운 코드블록 없이):\n"
+        '{\n  "concept_index": 0,\n  "result_index": 1\n}'
     )
 
     content = [{"type": "text", "text": CAPTION_INSTRUCTION}]
-    # 더 많은 컨텍스트 제공 (앞부분 + 중간 부분)
     context_text = paper_text[:5000]
     if len(paper_text) > 5000:
         context_text += "\n...\n" + paper_text[5000:8000]
     content.append({"type": "text", "text": f"\n\n[문서 내용 일부]\n{context_text}"})
 
-    # Add images with caption hints, figure_number, image_hash and surrounding text
+    # Add images with caption hints, figure_number, image_hash, category and surrounding text
     for idx, c in enumerate(top_candidates):
         b64 = base64.b64encode(c["png_bytes"]).decode("utf-8")
         cap_info = c.get("original_caption") or c.get("nearest_caption") or c.get("caption_hint", "")
         fignum = c.get("figure_number", "") or (f"Fig. {c.get('fig_label')}" if c.get('fig_label') else "")
         ihash = (c.get("image_hash") or c.get("hash") or c.get("_img_hash") or "")[:8]
+        cat = c.get("category", "other")
+        role = c.get("role_candidate", "")
         meta_parts = [f"figure_number={fignum or '?'}", f"image_hash={ihash or '?'}",
-                      f"page={c.get('page','?')}"]
+                      f"page={c.get('page','?')}", f"category={cat}", f"role={role or '?'}"]
         meta_str = " | ".join(meta_parts)
         cap_info_str = f"\n  [original_caption]: {cap_info}" if cap_info else "\n  [original_caption]: (없음)"
         surrounding = c.get("surrounding_text", "")
@@ -1968,7 +2053,9 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
                 cap_info = c.get("original_caption") or c.get("nearest_caption") or c.get("caption_hint", "")
                 fignum = c.get("figure_number", "") or (f"Fig. {c.get('fig_label')}" if c.get('fig_label') else "")
                 ihash = (c.get("image_hash") or c.get("hash") or c.get("_img_hash") or "")[:8]
-                meta_str = f"figure_number={fignum or '?'} | image_hash={ihash or '?'} | page={c.get('page','?')}"
+                cat = c.get("category", "other")
+                role = c.get("role_candidate", "")
+                meta_str = f"figure_number={fignum or '?'} | image_hash={ihash or '?'} | page={c.get('page','?')} | category={cat} | role={role or '?'}"
                 cap_str = f"\n  [original_caption]: {cap_info}" if cap_info else "\n  [original_caption]: (없음)"
                 surrounding = c.get("surrounding_text", "")
                 surrounding_str = f"\n  [주변 문맥]: {surrounding[:500]}" if surrounding else ""
@@ -2043,12 +2130,18 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
                 return None, fallback_cap
             return fig, fallback_cap
 
-        concept_cap = parsed.get("concept_caption", "")
-        result_cap = parsed.get("result_caption", "")
-
-        # 캡션에서 "본 발명은/의/에" 등 금지 표현 후처리 제거
-        concept_cap = _strip_invention_phrases(concept_cap)
-        result_cap = _strip_invention_phrases(result_cap)
+        # §10: Vision LLM은 선택만 수행. 캡션 번역은 최종 선택된 2개에 대해서만 수행
+        cap1_raw = concept_fig.get("original_caption", "") or concept_fig.get("nearest_caption", "")
+        cap2_raw = effect_fig.get("original_caption", "") or effect_fig.get("nearest_caption", "")
+        if cap1_raw or cap2_raw:
+            translated = _translate_captions_only(cap1_raw, cap2_raw,
+                                                  fig_title_context=fig_title_context,
+                                                  model=model)
+            concept_cap = _strip_invention_phrases(translated[0])
+            result_cap = _strip_invention_phrases(translated[1])
+        else:
+            concept_cap = ""
+            result_cap = ""
 
         # ── 최종 선택 사유 결정 ──
         c_reason = "Vision LLM concept selection"
@@ -2059,7 +2152,6 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
             r_reason += " (overridden by text-LLM fig match)"
 
         # ── 번역 결과를 figure dict에 보존 (PPT 표시 단계에서 우선 사용) ──
-        # _fig_or_none이 None을 반환하기 전에 dict에 저장
         if concept_fig is not None:
             concept_fig["translated_caption"] = concept_cap
             concept_fig["selection_reason"] = c_reason
@@ -2105,36 +2197,65 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
             return None, None, ["", ""]
 
 def pick_two_figures(candidates: List[Dict]) -> Tuple[Dict, Dict]:
+    """Category 기반 역할별 figure 선택 (요청서 §5).
+    top_image: method_or_concept category에서 가장 대표적인 figure
+    bottom_image: result_or_effect category에서 가장 대표적인 figure
+    """
     import hashlib
     if not candidates:
         raise RuntimeError("No image candidates found in PDF.")
 
-    concept_kw = ["framework", "architecture", "pipeline", "overview", "system",
-                  "method", "approach", "proposed", "module", "flow", "diagram"]
-    effect_kw = ["result", "performance", "evaluation", "comparison", "error",
-                 "accuracy", "rmse", "improvement", "reduction", "%"]
-
-    def score(c, kws):
-        t = c.get("caption_hint", "").lower()
-        return sum(1 for k in kws if k in t)
-
     def _get_hash(c):
-        return c.get("_img_hash") or hashlib.md5(c["png_bytes"]).hexdigest()
+        return c.get("_img_hash") or c.get("image_hash") or hashlib.md5(c["png_bytes"]).hexdigest()
 
-    scored = [(i, score(c, concept_kw), score(c, effect_kw), c["area"]) for i, c in enumerate(candidates)]
-    ci = sorted(scored, key=lambda x: (x[1], x[3]), reverse=True)[0][0]
-    c_hash = _get_hash(candidates[ci])
+    # Category 기반 분리
+    method_cands = [(i, c) for i, c in enumerate(candidates) if c.get("category") == "method_or_concept"]
+    result_cands = [(i, c) for i, c in enumerate(candidates) if c.get("category") == "result_or_effect"]
 
-    # effect 이미지 선택: concept과 인덱스·해시 모두 달라야 함
+    # method_or_concept에서 selection_score + area 기준 최고점
+    ci = None
+    if method_cands:
+        method_cands.sort(key=lambda x: (x[1].get("selection_score", 0), x[1].get("area", 0)), reverse=True)
+        ci = method_cands[0][0]
+
+    # result_or_effect에서 selection_score + area 기준 최고점 (ci와 다른 것)
     ei = None
-    for i, _, _, _ in sorted(scored, key=lambda x: (x[2], x[3]), reverse=True):
-        if i != ci and _get_hash(candidates[i]) != c_hash:
-            ei = i; break
+    if result_cands:
+        result_cands.sort(key=lambda x: (x[1].get("selection_score", 0), x[1].get("area", 0)), reverse=True)
+        for idx, c in result_cands:
+            if idx != ci:
+                ei = idx
+                break
+
+    # Fallback: category 기반 선택 실패 시 기존 키워드 방식
+    if ci is None or ei is None:
+        concept_kw = ["framework", "architecture", "pipeline", "overview", "system",
+                      "method", "approach", "proposed", "module", "flow", "diagram"]
+        effect_kw = ["result", "performance", "evaluation", "comparison", "error",
+                     "accuracy", "rmse", "improvement", "reduction", "%"]
+
+        def score(c, kws):
+            t = (c.get("caption_hint", "") or c.get("original_caption", "")).lower()
+            return sum(1 for k in kws if k in t)
+
+        scored = [(i, score(c, concept_kw), score(c, effect_kw), c["area"]) for i, c in enumerate(candidates)]
+
+        if ci is None:
+            ci = sorted(scored, key=lambda x: (x[1], x[3]), reverse=True)[0][0]
+
+        c_hash = _get_hash(candidates[ci])
+
+        if ei is None:
+            for i, _, _, _ in sorted(scored, key=lambda x: (x[2], x[3]), reverse=True):
+                if i != ci and _get_hash(candidates[i]) != c_hash:
+                    ei = i
+                    break
+
     if ei is None:
-        # 해시가 다른 후보가 없으면 인덱스만 다른 것이라도 선택
         for i in range(len(candidates)):
             if i != ci:
-                ei = i; break
+                ei = i
+                break
     if ei is None:
         ei = ci  # 후보가 1개뿐
     return candidates[ci], candidates[ei]
@@ -3244,13 +3365,20 @@ def main():
             pdf_path = src_data
             stem = pdf_path.stem
             print(f"\n== [{idx+1}/{len(jobs)}] Processing PDF: {pdf_path.name}")
+            _t_total = time.time()
 
+            _t0 = time.time()
             with fitz.open(str(pdf_path)) as doc:
+                _t0 = _timer_log("pdf_open", _t0)
+
                 text = extract_text(doc, max_pages=args.max_pages)
+                _t0 = _timer_log("text_parse", _t0)
 
                 # Step 1: 텍스트 LLM을 먼저 호출하여 representative_figures 확보
                 print(f"  Calling LLM ({args.model})...")
                 precomputed_raw = call_llm(text, model=args.model)
+                _t0 = _timer_log("ai_summarization", _t0)
+
                 # 논문만 fig_title 전달 — 특허는 캡션이 없어 텍스트 LLM 선정이 부정확하므로 Vision LLM이 독립 판단
                 _is_patent = precomputed_raw.get("doc_type") == "patent"
                 rep_figs = [] if _is_patent else (precomputed_raw.get("representative_figures") or [])
@@ -3259,10 +3387,13 @@ def main():
                 if not args.no_images:
                     try:
                         candidates = extract_images(doc)
+                        _t0 = _timer_log("figure_candidate_build", _t0)
+
                         concept_fig, effect_fig, vision_caps = pick_two_figures_with_vision(
                             candidates, text, model=args.model,
                             representative_figures=rep_figs,
                         )
+                        _t0 = _timer_log("ai_selection_and_translation", _t0)
                     except Exception as e:
                         print(f"  [WARN] Image extraction failed: {e}")
                         vision_caps = ["", ""]
@@ -3270,6 +3401,7 @@ def main():
         elif src_type == "wips":
             url = src_data
             print(f"\n== [{idx+1}/{len(jobs)}] Processing WIPS URL: {url}")
+            _t_total = time.time()
             text, stem = scrape_wips_patent(url)
 
         else:
@@ -3278,6 +3410,7 @@ def main():
         # 원문 파일명 결정 (PDF는 파일명, WIPS는 URL)
         _source_pdf = pdf_path.name if src_type == "pdf" else (src_data if src_type == "wips" else "")
 
+        _t_ppt = time.time()
         brief, concept_fig, effect_fig = process_one_document(
             text=text, stem=stem, model=args.model,
             save_json=args.save_json, save_md=args.save_md,
@@ -3291,6 +3424,8 @@ def main():
         slide = duplicate_slide(prs, slide_index=base_slide_idx)
 
         fill_slide(slide, brief, doc_idx=idx+1, concept_fig=concept_fig, effect_fig=effect_fig)
+        _timer_log("ppt_generation", _t_ppt)
+        _timer_log("total", _t_total)
         print(f"  → Slide {idx+1} filled: {brief.title}")
 
     # 원본 템플릿 슬라이드(base_slide_idx) 제거 — 복제본만 남김
