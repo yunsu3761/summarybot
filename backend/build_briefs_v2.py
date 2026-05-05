@@ -601,10 +601,20 @@ def trim_white_margin(png_bytes: bytes, pad: int = 6) -> bytes:
 
 
 _CAPTION_START_RE = re.compile(
-    r"^\s*(Fig\.?|Figure|그림|도면)\s*(\d+)([a-zA-Z])?\s*[\.\:\)]?\s*",
+    r"^\s*(Fig\.?|Figure|그림|도면)\s*(\d+)([a-zA-Z])?\s*[\.\:\)\-\—\–]\s*",
     re.IGNORECASE,
 )
 _SUBLABEL_ONLY_RE = re.compile(r"^\s*\(?([a-zA-Z])\)?\s*$")
+# 본문에서 figure를 참조하는 문장 (캡션이 아님). 'Fig. N' 뒤에 동사/접속사/관계사 등이 오면 본문 참조.
+# 예: "Fig. 1 shows ...", "Fig. 8b depicts ...", "Fig. 13b where the ...", "Fig. 9. Clearly, from ..."
+_BODY_REF_AFTER_NUM_RE = re.compile(
+    r"^\s*(?:Fig\.?|Figure|그림|도면)\s*\d+[a-zA-Z]?\s*[\.\,]?\s*"
+    r"(?:shows?|depicts?|displays?|presents?|illustrates?|describes?|indicates?|reveals?|"
+    r"demonstrates?|provides?|gives?|is|are|was|were|will|would|can|could|may|might|"
+    r"clearly|where|when|while|after|before|above|below|here|there|in|on|of|for|"
+    r"and|but|so|because|since|although|however)\b",
+    re.IGNORECASE,
+)
 
 
 def _find_figure_captions_for_page(page) -> List[Dict]:
@@ -651,6 +661,11 @@ def _find_figure_captions_for_page(page) -> List[Dict]:
         text = ln["text"]
         m = _CAPTION_START_RE.match(text)
         if not m:
+            i += 1
+            continue
+        # 본문 텍스트에서 figure를 참조하는 문장은 캡션으로 인정하지 않는다.
+        # 예: "Fig. 1 shows ...", "Fig. 8b depicts ...", "Fig. 13b where ...".
+        if _BODY_REF_AFTER_NUM_RE.match(text):
             i += 1
             continue
         prefix_raw = m.group(1).lower()
@@ -936,6 +951,7 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
                     "width": img_w,
                     "height": img_h,
                     "bbox": list(img_bbox) if img_bbox else None,
+                    "group_bbox": list(img_bbox) if img_bbox else None,
                     "png_bytes": png_bytes,
                     "byte_len": len(png_bytes),
                     "caption_hint": caption_hint,
@@ -945,6 +961,9 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
                     "translated_caption": "",  # 번역은 후속 단계에서 채움
                     "caption_bbox": caption_bbox,
                     "caption_source": caption_source,  # below_image_text / above_image_text / page_caption_hint / ""
+                    "crop_source": "embedded_image",
+                    "contains_real_figure": True,    # embedded image는 실제 raster image
+                    "contains_body_text": False,
                     "surrounding_text": surrounding_text,
                     "fig_label": fig_label,           # 순수 숫자 (예: "3", "1a")
                     "figure_number": figure_number_str or (f"Fig. {fig_label}" if fig_label else ""),
@@ -1008,6 +1027,14 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
             if cf:
                 existing_fignum.add(cf)
 
+    # 요청서 §10 — text-only 후보 제거 (contains_real_figure=False)
+    rejected = [c for c in merged if not c.get("contains_real_figure", True)]
+    for r in rejected:
+        print(f"  [WARN] text-only candidate rejected: page={r.get('page','?')}, "
+              f"fig={r.get('figure_number','?')}, "
+              f"crop_source={r.get('crop_source','?')}")
+    merged = [c for c in merged if c.get("contains_real_figure", True)]
+
     final = merged[:max_candidates]
 
     # 요청서 §13 — figure candidate 로그
@@ -1027,12 +1054,234 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
     return final
 
 
+def _x_overlap(a: List[float], b: List[float]) -> float:
+    """두 bbox의 x축 겹침 길이(pt). 양수면 겹침, 음수면 분리."""
+    return min(a[2], b[2]) - max(a[0], b[0])
+
+
+def _collect_visual_rects(page, region_bbox: List[float]) -> List[List[float]]:
+    """페이지 region 내부의 시각 객체(이미지·드로잉) bbox 목록.
+    text block은 제외 — figure visual content만 모은다.
+    region 내부와 일정 비율 이상 겹치는 것만 반환.
+    """
+    rects: List[List[float]] = []
+    rx0, ry0, rx1, ry1 = region_bbox
+    region_area = max((rx1 - rx0) * (ry1 - ry0), 1.0)
+
+    # 1) 이미지 객체
+    try:
+        for it in page.get_image_info(xrefs=True):
+            bb = it.get("bbox")
+            if not bb:
+                continue
+            ix = max(0.0, min(rx1, bb[2]) - max(rx0, bb[0]))
+            iy = max(0.0, min(ry1, bb[3]) - max(ry0, bb[1]))
+            if ix * iy > 0.0:
+                rects.append([bb[0], bb[1], bb[2], bb[3]])
+    except Exception:
+        pass
+
+    # 2) text dict의 image block (type=1)
+    try:
+        blocks = page.get_text("dict").get("blocks", [])
+        for blk in blocks:
+            if blk.get("type") != 1:
+                continue
+            bb = blk.get("bbox")
+            if not bb:
+                continue
+            ix = max(0.0, min(rx1, bb[2]) - max(rx0, bb[0]))
+            iy = max(0.0, min(ry1, bb[3]) - max(ry0, bb[1]))
+            if ix * iy > 0.0:
+                rects.append([bb[0], bb[1], bb[2], bb[3]])
+    except Exception:
+        pass
+
+    # 3) drawings (벡터 그래픽)
+    try:
+        for d in page.get_drawings():
+            r = d.get("rect")
+            if not r:
+                continue
+            ix = max(0.0, min(rx1, r.x1) - max(rx0, r.x0))
+            iy = max(0.0, min(ry1, r.y1) - max(ry0, r.y0))
+            if ix * iy > 0.0:
+                rects.append([r.x0, r.y0, r.x1, r.y1])
+    except Exception:
+        pass
+
+    return rects
+
+
+def _collect_text_rects(page, region_bbox: List[float], min_chars: int = 8) -> List[List[float]]:
+    """페이지 region 내부의 본문 텍스트 블록 bbox 목록 (figure 내부의 짧은 라벨은 제외)."""
+    rects: List[List[float]] = []
+    rx0, ry0, rx1, ry1 = region_bbox
+    try:
+        blocks = page.get_text("dict").get("blocks", [])
+        for blk in blocks:
+            if blk.get("type") != 0:
+                continue
+            text = "".join(
+                span.get("text", "") for line in blk.get("lines", [])
+                for span in line.get("spans", [])
+            ).strip()
+            if len(text) < min_chars:
+                continue
+            bb = blk.get("bbox")
+            if not bb:
+                continue
+            cx = (bb[0] + bb[2]) / 2.0
+            cy = (bb[1] + bb[3]) / 2.0
+            if rx0 <= cx <= rx1 and ry0 <= cy <= ry1:
+                rects.append([bb[0], bb[1], bb[2], bb[3]])
+    except Exception:
+        pass
+    return rects
+
+
+def _compute_figure_visual_bbox(page, cap_bbox: List[float], upper_limit: float,
+                                 column_left: float, column_right: float) -> Optional[List[float]]:
+    """caption_bbox 바로 위쪽 figure visual content의 정확한 bbox 계산.
+
+    1) caption 위쪽 column 영역 안에서 시각 객체(이미지·드로잉)를 모두 모은다.
+    2) caption에 가장 가까운(아래쪽) 클러스터를 figure 본체로 본다.
+    3) 그 클러스터의 union bbox를 반환. 시각 객체가 없으면 None.
+
+    Returns: [x0, y0, x1, y1] or None
+    """
+    # 검색 region: caption 위쪽 column 폭 전체
+    region = [column_left, max(0.0, upper_limit), column_right, max(0.0, cap_bbox[1] - 1.0)]
+    if region[3] - region[1] < 10.0:
+        return None
+    visual_rects = _collect_visual_rects(page, region)
+    if not visual_rects:
+        return None
+
+    # caption x-범위와 어느 정도 겹치는 시각 객체를 우선 (열 정렬)
+    cap_w = max(cap_bbox[2] - cap_bbox[0], 1.0)
+    relevant = []
+    for r in visual_rects:
+        ov = _x_overlap(r, cap_bbox)
+        if ov / cap_w > 0.05 or _x_overlap(r, [column_left, 0, column_right, 0]) > (column_right - column_left) * 0.05:
+            relevant.append(r)
+    if not relevant:
+        relevant = visual_rects
+
+    # caption에 가까운 cluster — y_bottom이 caption_top 근처(20pt 이내)에 있는 객체 우선
+    cap_top = cap_bbox[1]
+    relevant.sort(key=lambda r: cap_top - r[3])  # 가까운 거리(작은 양수)부터
+    # 첫 객체를 시드로, y 방향으로 인접한 객체들을 cluster화
+    cluster = [relevant[0]]
+    cluster_top = relevant[0][1]
+    cluster_bot = relevant[0][3]
+    for r in relevant[1:]:
+        # cluster의 vertical extent와 가깝거나 겹치면 포함
+        gap = max(cluster_top - r[3], r[1] - cluster_bot)
+        if gap <= 20.0:
+            cluster.append(r)
+            cluster_top = min(cluster_top, r[1])
+            cluster_bot = max(cluster_bot, r[3])
+    if not cluster:
+        return None
+
+    x0 = max(min(r[0] for r in cluster), region[0])
+    y0 = max(min(r[1] for r in cluster), region[1])
+    x1 = min(max(r[2] for r in cluster), region[2])
+    y1 = min(max(r[3] for r in cluster), region[3])
+    if x1 - x0 < 30.0 or y1 - y0 < 30.0:
+        return None
+
+    # 작은 패딩(figure 외곽선이 잘리지 않도록)
+    pad = 4.0
+    return [
+        max(region[0], x0 - pad),
+        max(region[1], y0 - pad),
+        min(region[2], x1 + pad),
+        min(region[3], y1 + pad),
+    ]
+
+
+def _check_contains_real_figure(page, bbox: List[float]) -> Tuple[bool, float]:
+    """bbox 내부에 실제 figure visual content가 있는지 검사.
+
+    Returns: (contains_real_figure, visual_density)
+      - visual_density: visual rect 면적 / bbox 면적 (대략적인 시각 밀도)
+    조건:
+      - 시각 객체 면적 비율이 충분(>= 0.10)
+      - 본문 텍스트 블록(>= 8자) 개수가 5개 미만
+    """
+    bbox_area = max((bbox[2] - bbox[0]) * (bbox[3] - bbox[1]), 1.0)
+    vrects = _collect_visual_rects(page, bbox)
+    if not vrects:
+        return False, 0.0
+    visual_area = 0.0
+    for r in vrects:
+        ix = max(0.0, min(bbox[2], r[2]) - max(bbox[0], r[0]))
+        iy = max(0.0, min(bbox[3], r[3]) - max(bbox[1], r[1]))
+        visual_area += ix * iy
+    density = visual_area / bbox_area
+    text_rects = _collect_text_rects(page, bbox, min_chars=20)
+    if density < 0.10:
+        return False, density
+    if len(text_rects) >= 5 and density < 0.25:
+        return False, density
+    return True, density
+
+
+def _detect_columns(page) -> List[Tuple[float, float]]:
+    """페이지의 본문 컬럼(좌우 단) 추정. 텍스트 블록 x-중심을 보고 1열 또는 2열로 분류.
+    Returns: [(left, right), ...] — 각 컬럼의 x 범위
+    """
+    page_w = page.rect.width
+    try:
+        blocks = page.get_text("dict").get("blocks", [])
+    except Exception:
+        return [(0.0, page_w)]
+    centers = []
+    for blk in blocks:
+        if blk.get("type") != 0:
+            continue
+        bb = blk.get("bbox")
+        if not bb:
+            continue
+        if bb[2] - bb[0] > page_w * 0.7:
+            continue
+        centers.append((bb[0] + bb[2]) / 2.0)
+    if len(centers) < 4:
+        return [(0.0, page_w)]
+    # 페이지 중간을 기준으로 좌/우 분류
+    mid = page_w / 2.0
+    left_count = sum(1 for c in centers if c < mid)
+    right_count = sum(1 for c in centers if c >= mid)
+    if left_count >= 3 and right_count >= 3:
+        return [(0.0, mid), (mid, page_w)]
+    return [(0.0, page_w)]
+
+
+def _column_for(bbox: List[float], columns: List[Tuple[float, float]]) -> Tuple[float, float]:
+    """bbox 중심이 속한 컬럼 반환 (없으면 페이지 폭 전체)."""
+    if not columns:
+        return (0.0, 0.0)
+    cx = (bbox[0] + bbox[2]) / 2.0
+    for col in columns:
+        if col[0] <= cx <= col[1]:
+            return col
+    return columns[0]
+
+
 def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: List[Dict],
                                     render_zoom: float = 2.0) -> List[Dict]:
-    """이미지 추출 fallback (요청서 §6).
+    """이미지 추출 fallback (요청서 §6,§8,§10,§11).
 
     각 페이지에서 caption은 있는데 embedded image로 매칭되지 못한 경우,
-    페이지를 렌더링해 caption_bbox 바로 위쪽 영역을 figure 영역으로 추정해 crop.
+    페이지를 렌더링해 caption_bbox 바로 위쪽 figure visual group 영역을 정밀하게 crop.
+
+    개선:
+      - 컬럼 인식 (좌/우 단 분리)
+      - drawings + image bbox로 visual extent 정밀 계산
+      - 본문 텍스트 영역은 crop에 포함하지 않음
+      - contains_real_figure 검증 — text-only 영역 거부
     """
     import hashlib
     out: List[Dict] = []
@@ -1059,6 +1308,7 @@ def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: Li
         existing = matched_fignum_by_page.get(pi + 1, set())
         page_w = page.rect.width
         page_h = page.rect.height
+        columns = _detect_columns(page)
 
         # 캡션을 y-top 순으로 정렬해 위쪽 cap 의 bottom을 다음 cap의 crop top 한계로 사용
         sorted_caps = sorted(page_captions, key=lambda c: c.get("bbox", [0,0,0,0])[1])
@@ -1074,26 +1324,55 @@ def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: Li
             if not cap_bbox:
                 continue
 
-            # 위쪽 한계 = 직전 캡션 bottom + 5pt, 없으면 페이지 상단
+            # 컬럼 인식 — 같은 컬럼의 캡션만 upper_limit에 사용
+            col_left, col_right = _column_for(cap_bbox, columns)
+            if col_right - col_left < 50.0:
+                col_left, col_right = 0.0, page_w
+
             upper_limit = 0.0
             for prev in sorted_caps[:cap_idx]:
                 pb = prev.get("bbox")
-                if pb and pb[3] < cap_bbox[1]:
-                    if pb[3] + 5.0 > upper_limit:
-                        upper_limit = pb[3] + 5.0
-            # crop 영역이 페이지의 70% 이하가 되도록 강제
-            min_top_by_height = cap_bbox[1] - page_h * 0.70
-            top = max(upper_limit, min_top_by_height, 0.0)
-            bottom = max(top + 10.0, cap_bbox[1] - 2.0)
-            # 좌우 — caption 좌우보다 약간 더 넓게 (10% 패딩)
-            pad_x = page_w * 0.05
-            left = max(0.0, cap_bbox[0] - pad_x)
-            right = min(page_w, cap_bbox[2] + pad_x)
-            # 캡션이 좁으면 figure는 더 넓을 수 있으므로 확장
-            if (right - left) < page_w * 0.5:
-                left = max(0.0, cap_bbox[0] - page_w * 0.15)
-                right = min(page_w, cap_bbox[2] + page_w * 0.15)
+                if not pb or pb[3] >= cap_bbox[1]:
+                    continue
+                # 같은 컬럼 캡션만 upper_limit으로 인정
+                pcx = (pb[0] + pb[2]) / 2.0
+                if not (col_left <= pcx <= col_right):
+                    continue
+                if pb[3] + 5.0 > upper_limit:
+                    upper_limit = pb[3] + 5.0
+
+            # 1) drawings + image bbox 기반 정밀 visual bbox
+            visual_bbox = _compute_figure_visual_bbox(
+                page, cap_bbox, upper_limit, col_left, col_right
+            )
+
+            crop_source = "visual_blocks_above_caption"
+            contains_real_figure = True
+            density = 0.0
+
+            if visual_bbox is None:
+                # 시각 객체 검출 실패 → 보수적 직사각형 fallback
+                min_top_by_height = cap_bbox[1] - page_h * 0.55
+                top = max(upper_limit, min_top_by_height, 0.0)
+                bottom = max(top + 10.0, cap_bbox[1] - 2.0)
+                pad_x = page_w * 0.04
+                left = max(col_left, cap_bbox[0] - pad_x)
+                right = min(col_right, cap_bbox[2] + pad_x)
+                if (right - left) < (col_right - col_left) * 0.5:
+                    left = col_left
+                    right = col_right
+                visual_bbox = [left, top, right, bottom]
+                crop_source = "rect_fallback_above_caption"
+
+            left, top, right, bottom = visual_bbox
             if (bottom - top) < 30.0 or (right - left) < 50.0:
+                continue
+
+            # text-only 영역 거부 검증 (요청서 §10)
+            contains_real_figure, density = _check_contains_real_figure(page, visual_bbox)
+            if not contains_real_figure:
+                print(f"  [WARN] text-only candidate rejected: paper page={pi+1}, "
+                      f"fig={cap.get('figure_number','?')}, density={density:.3f}")
                 continue
 
             crop_rect = fitz.Rect(left, top, right, bottom)
@@ -1132,6 +1411,7 @@ def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: Li
                 "width": img_w,
                 "height": img_h,
                 "bbox": [left, top, right, bottom],
+                "group_bbox": [left, top, right, bottom],
                 "png_bytes": png_bytes,
                 "byte_len": len(png_bytes),
                 "caption_hint": cap["text"],
@@ -1140,6 +1420,10 @@ def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: Li
                 "translated_caption": "",
                 "caption_bbox": cap.get("bbox"),
                 "caption_source": "page_crop_above_caption",
+                "crop_source": crop_source,
+                "contains_real_figure": True,
+                "contains_body_text": False,
+                "visual_density": round(density, 3),
                 "surrounding_text": "",
                 "fig_label": fignum,
                 "figure_number": cap.get("figure_number", ""),
@@ -1151,6 +1435,7 @@ def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: Li
             })
             print(f"  [INFO] page-crop fallback figure created: page={pi+1}, "
                   f"fig={cap.get('figure_number','?')}, "
+                  f"crop_source={crop_source}, density={density:.3f}, "
                   f"orig_caption='{cap['text'][:60]}'")
 
     return out
@@ -1598,6 +1883,8 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
         "- original_caption이 동일한 후보 두 개를 선택하지 마세요.\n"
         "- 시각적으로 동일하거나 거의 같은 이미지(같은 그래프의 단순 확대/반복/같은 figure의 sub-image)는 중복 선택하지 마세요.\n"
         "- 두 이미지는 반드시 서로 다른 의미·용도를 가진 figure여야 합니다 (예: 구조도 + 결과 그래프).\n"
+        "- 같은 figure group 안의 (a),(b),(c) 조각을 따로따로 선택하지 마세요. 같은 caption 아래 묶인 figure 전체가 하나의 단위입니다.\n"
+        "- 텍스트만 있는 영역(본문 문단, 표 텍스트 등)은 절대 선택하지 마세요. 반드시 실제 figure visual content(그림/그래프/사진/도식)가 포함된 후보만 선택하세요.\n"
         "- original_caption이 비어있는 후보보다 캡션이 정상적으로 추출된 후보를 우선 선택하세요.\n\n"
         + fig_title_context +
         "\n**캡션 작성 규칙 (반드시 준수, 요청서 §3-2,§8)**:\n"
