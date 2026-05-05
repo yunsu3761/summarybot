@@ -1,87 +1,87 @@
 {
   "doc_type": "paper",
-  "title": "LLC·PSFB 공통 다리·적응 DC링크 통합 OBC-APM 기술",
+  "title": "모터권선 LCL 통합형 IOBC VSC dq-임피던스 분석 기술",
   "head_messages": [
-    "APM(Auxiliary Power Module)과 OBC(On-Board Charger)를 공통 스위치 다리와 제어 통합으로 동시 운전하며 전 구간 ZVS(Zero-Voltage Switching) 확보",
-    "LLC(Inductor-Inductor-Capacitor)-PSFB(Phase-Shift Full Bridge) 공용 다리와 적응 DC링크로 전력 상쇄·ZVS 에너지 확장 달성, 효율·부피·비용 동시 개선"
+    "EV 통합 온보드 차저에서 견인모터 고정자 권선을 LCL 필터의 그리드측 인덕터로 재사용한 VSC의 입력 임피던스와 안정성 규명",
+    "dq 프레임 임피던스 모델, 활성 감쇠·전류·전압 루프 설계와 일반화 나이퀴스트 기준으로 그리드 임피던스 변동 대응 해석 및 HIL 검증"
   ],
   "purpose": [
-    "OBC와 APM 동시 운전 시 별도 릴레이·보조 회로 없이 독립 제어와 전 스위치 ZVS 확보",
-    "EV 전원부의 효율 향상과 파워 밀도·비용 목표 달성을 위한 통합 충전기 구조 구현"
+    "모터권선 통합 LCL 필터 기반 IOBC VSC의 입력 임피던스 특성과 제어 안정성 체계적 규명",
+    "그리드 임피던스 변동 시 불안정 리스크를 정량 평가하고 보상 설계 기준 제시"
   ],
   "prior_problems": [
-    "기존 통합기는 동시 운전 불가 또는 릴레이·추가 회로 요구로 신뢰성과 효율 저하",
-    "다권선 변압기 기반은 누설 인덕턴스 설계 복잡·높이 증가로 부피·비용 증가"
+    "모터 재사용 LCL 구조는 필터 인덕턴스가 모터 사양에 종속되어 공진 주파수와 제어 여유가 변동",
+    "그리드 임피던스 변화 시 기존 LCL 설계 가정이 깨져 음의 임피던스 영역 유발 및 루프 불안정 가능"
   ],
   "proposed_method": [
     {
-      "title": "공통 고전압측 다리 기반 OBC-APM 토폴로지 통합",
+      "title": "모터 통합 LCL 필터 구성 및 파라미터 식별",
       "details": [
-        "LLC OBC의 2차측 다리와 PSFB APM의 1차측 다리를 공용 스위치 다리로 결합",
-        "동시 모드에서 공용 다리를 PSFB 지연 다리로 구동해 전류 상쇄와 ZVS 유도",
-        "OBC와 APM은 각자 전압·전류 루프로 독립 제어하여 상호 간섭 최소화"
+        "견인 인덕션모터 고정자 권선을 그리드측 인덕터로 재구성하는 LCL 입력단 적용",
+        "분리형 3상 부하·전력분석기로 충전 모드 등가 인덕턴스·저항 실측",
+        "IEEE 519 기준을 따르는 비교용 전형 LCL 설계와 파라미터 매칭"
       ]
     },
     {
-      "title": "적응형 DC링크 제어로 LLC 양방향 운전 적용",
+      "title": "dq 프레임 소신호 모델링과 제어기 설계",
       "details": [
-        "전력 흐름 방향별 DC링크 기준 전압을 달리 설정해 LLC를 거의 단위 이득 근방 운용",
-        "순방향은 약 단위 이득, 역방향은 피크가 단위 이득을 넘지 않게 약간 감압 설정",
-        "좁은 주파수 가변으로 손실 저감, CLLLC 대신 단순한 LLC로 양방향 달성"
+        "부스트 정류기 평균모델을 선형화하고 L2·Cf를 결합해 LCL 소신호 모델 구성",
+        "그리드 전류 피드백 고역통과 보상으로 공진 억제하는 활성 감쇠 적용",
+        "PI 전류·전압 루프와 PLL, 샘플링·연산 지연의 2차 Padé 근사 반영"
       ]
     },
     {
-      "title": "동시 충전·V2G 운전의 ZVS 확보 메커니즘",
+      "title": "입력 임피던스 도출과 안정성 해석 절차",
       "details": [
-        "동시 충전 시 LLC 2차전류와 PSFB 1차전류의 반대 위상으로 공용 다리 전류 감소",
-        "지연 다리의 ZVS 에너지를 LLC 전류로 보강해 경부하에서도 ZVS 유지",
-        "V2G(Vehicle-to-Grid) 시 공용 다리 전류 증대하나 LLC 역동작으로 ZVS 에너지 증대"
+        "무제어, 전류루프 폐쇄, 전압루프 폐쇄 단계별 dq 어드미턴스 계산",
+        "등가 입력 임피던스의 주파수 응답으로 공진과 위상 여유 파악",
+        "그리드 임피던스와의 임피던스 비에 일반화 나이퀴스트 기준 적용"
       ]
     },
     {
-      "title": "APM 단독·고장 완화 운전 로직",
+      "title": "그리드 임피던스 변동 대응 및 HIL 검증",
       "details": [
-        "중대부하는 PSFB 정상 구동, 경부하는 LLC 1차 스위치를 대각 구동해 여자전류 주입",
-        "여자전류로 지연 다리 ZVS 전류 확보, 전 구간 ZVS 달성",
-        "공용 다리 개방고장 시 LLC 1차 단락 재구성으로 부분 출력과 ZVS 유지"
+        "그리드 인덕턴스 1μH~3mH로 스윕해 교차위상과 안정성 한계 확인",
+        "Typhoon HIL 402에서 이산화 제어기 구현·실시간 폐루프 시험",
+        "정상상태 THD·역률, 인덕턴스 도약 시 과도 파형으로 분석 결과 검증"
       ]
     }
   ],
   "improvements": [
-    "동시 충전 모드 효율 최대 97.81% 달성, 분리형 대비 평균 약 0.5%p 향상",
-    "APM 단독 모드 피크 효율 95.46% 달성, 경부하 효율 분리형 대비 최대 2%p 향상",
-    "스위치 수·입력 필터 공유로 부피 17%·비용 19% 절감, 1kW 시 도통손 66% 감소"
+    "통합 LCL의 공진 주파수 이동을 계측(전형 2.22kHz 대비 통합 1.65kHz)해 제어 보상 대역 재설계 근거 확보",
+    "전압 루프 폐쇄 시 그리드 인덕턴스 0→3mH 변동에서도 안정 유지",
+    "정격 운전에서 그리드 전류 THD 1.43%와 단위 역률 달성"
   ],
   "paper_info": {
-    "journal_or_patent_office": "IEEE Transactions on Power Electronics",
-    "paper_title": "An Effective Integration of APM and OBC With Simultaneous Operation and Entire ZVS Range for Electric Vehicle",
-    "institution": "Seoul National University of Science",
-    "doi_or_patent_no": "10.1109/TPEL.2021.3063931",
-    "year": "2021",
-    "month": "9"
+    "journal_or_patent_office": "IEEE Workshop on Control and Modeling for Power Electronics (COMPEL)",
+    "paper_title": "Input Impedance and Stability Analysis of VSC in Integrated On-Board Chargers for Electric Vehicles",
+    "institution": "The Hong Kong Polytechnic University",
+    "doi_or_patent_no": "10.1109/COMPEL57542.2024.10614024",
+    "year": "2024",
+    "month": ""
   },
   "representative_figures": [
     {
       "role": "concept",
-      "page": 10345,
-      "fig_number": "Fig. 4",
-      "fig_title": "Schematic circuit of the proposed integrated charger"
+      "page": 2,
+      "fig_number": "Fig. 1",
+      "fig_title": "Circuit diagram of 3ph LCL-filtered VSC IOBC system"
     },
     {
       "role": "result",
-      "page": 10351,
-      "fig_number": "Fig. 21",
-      "fig_title": "(a) Measured efficiency when VHV=330V, VLV=13V, and PAPM=0.4kW. (b) Loss analysis when Pcharging=2.5kW during the simultaneous mode."
+      "page": 7,
+      "fig_number": "Fig. 8",
+      "fig_title": "Closed voltage loop impedance frequency response (a) Input impedance comparison (b) Grid impedances vs Input impedance response for integrated LCL-filter"
     }
   ],
   "figure_captions_ko": [
-    "LLC 공진형 OBC와 PSFB 기반 APM의 고전압측 공통 레그를 공유하고 자화전류·전류 상쇄를 활용해 동시 운전과 전 영역 ZVS 동작을 구현하는 통합 충전기 회로 구성",
-    "동시 충전 모드에서 VHV=330V, VLV=13V, PAPM=0.4kW 조건의 효율 곡선과 2.5kW 충전 시 손실 분해를 통해 공통 레그 도통 손실 저감 및 손실 지배 항목을 입증하는 성능 검증 결과"
+    "",
+    ""
   ],
   "_meta_doc_type": "paper",
-  "_meta_doi": "10.1109/TPEL.2021.3063931",
+  "_meta_doi": "10.1109/COMPEL57542.2024.10614024",
   "_meta_patent_no": "",
-  "_meta_institution": "University of Science and Technology",
-  "_meta_year": "2021",
-  "source_pdf": "10627.pdf"
+  "_meta_institution": "University",
+  "_meta_year": "",
+  "source_pdf": "6356.pdf"
 }

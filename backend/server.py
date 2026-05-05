@@ -14,7 +14,7 @@ import threading
 import tempfile
 from pathlib import Path
 from datetime import datetime
-import appnope
+# import appnope
 
 # ============================================================
 # Project root resolution (backend/ 폴더에서 실행해도 프로젝트 루트 기준 동작)
@@ -28,6 +28,9 @@ from flask_cors import CORS
 try:
     from dotenv import load_dotenv
     load_dotenv(PROJECT_ROOT / ".env")
+    print("ENV PATH:", PROJECT_ROOT / ".env")
+    print("ENV EXISTS:", (PROJECT_ROOT / ".env").exists())
+    print("OPENAI KEY:", os.getenv("OPENAI_API_KEY"))
 except ImportError:
     pass
 
@@ -417,7 +420,7 @@ def start_summarize():
     def _run_summarize():
         try:
             # 방해 금지 (맥OS 잠자기 방지)
-            appnope.nope()
+            # appnope.nope()
 
             from build_briefs_v2 import (
                 extract_text, extract_images, pick_two_figures_with_vision,
@@ -635,9 +638,9 @@ def start_summarize():
             job["status"] = "error"
             job["errors"].append({"filename": "system", "error": str(e)})
 
-        finally:
+        # finally:
             # 작업이 끝나면 다시 잠자기 허용
-            appnope.nap()
+            # appnope.nap()
 
     thread = threading.Thread(target=_run_summarize, daemon=True)
     thread.start()

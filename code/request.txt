@@ -1,31 +1,25 @@
-## Claude Code 전달용 요청서
+## Claude Code 전달용 최종 요청서
 
 현재 **여러 개(약 7개)의 논문 PDF를 한 번에 읽어서 AI API 기반으로 PPT를 자동 생성하는 코드**를 어느 정도 구현해둔 상태입니다.
-**기존에 잘 동작하는 PPT 생성 기능, 전체 구조, 슬라이드 레이아웃, AI API 호출 방식, 텍스트 요약/정리 로직은 변경하지 말고**, 아래의 **논문 대표 이미지 2개 선택 및 해당 이미지의 실제 캡션 추출/표시 부분만 정확하게 개선**해주세요.
+**기존에 잘 동작하는 PPT 생성 기능, 전체 구조, 슬라이드 레이아웃, AI API 호출 방식, 텍스트 요약/정리 로직은 변경하지 말고**, 아래의 **논문 대표 figure 이미지 2개 선택 / figure caption 추출 / 번역 / figure crop 품질 개선 부분만 정확하게 수정**해주세요.
 
 ---
 
 # 1. 수정 목적
 
-논문 PDF에서 대표 이미지 2개를 가져와 PPT에 넣을 때, 아래 문제가 발생하고 있습니다.
+논문 PDF에서 대표 이미지 2개를 가져와 PPT에 넣을 때 현재 아래 문제가 있습니다.
 
 1. **대표 이미지 2개를 뽑아야 하는데 동일한 이미지가 2번 들어가는 경우가 있음**
-2. 이미지 아래 제목이 실제 논문 캡션이 아니라 아래처럼 잘못 표시되는 경우가 있음
+2. 이미지 아래 제목이 실제 논문 caption이 아니라 아래처럼 잘못 표시되는 경우가 있음
 
    * `"그림1"`, `"그림2"`
    * `"논문 p.9 대표 이미지 - 캡션 확인 필요"`
    * `"Fig.Fig. 1. 이미지 추출 불가로 원본 확인 필요"`
-3. 실제 PDF에는 이미지 바로 아래에 **영문 figure caption**이 존재하는데, 이를 그대로 가져오지 못하고 있음
-4. 일부 PDF는 embedded image 추출에 실패해서 이미지 자체를 못 가져오고 fallback 문구로 처리되는 경우가 있음
-
-내가 원하는 최종 동작은 다음과 같습니다.
-
-* **논문 1개당 대표 이미지 2개만 선택**
-* **동일한 이미지 / 동일 figure / 동일 caption 중복 선택 금지**
-* **이미지 아래에는 PDF 원문에 있는 실제 영문 caption을 먼저 정확히 추출**
-* **그 후 그 영문 caption을 한국어로 번역하여 PPT에 표시**
-* **caption이나 이미지가 실제로 존재하는데도 fallback 문구가 뜨지 않게 수정**
-* **기존 PPT 생성 전체 흐름과 구조는 유지**
+3. 실제 PDF에는 이미지 바로 아래에 **영문 figure caption**이 존재하는데, 이를 제대로 가져오지 못하고 있음
+4. 일부 경우에는 figure 이미지 영역만 가져와야 하는데, **주변 본문 문단이나 caption까지 함께 crop**되고 있음
+5. 일부 논문은 figure가 하나의 캡션 아래 `(a), (b), (c)`처럼 **연관된 이미지/그래프 묶음(group)**으로 구성되어 있는데, 이를 하나의 figure group으로 다루지 못하고 조각 단위로 잘못 처리하고 있음
+6. embedded image 추출이 실패하면 바로 `"이미지 추출 불가"`로 가는 경우가 있는데, **page render + crop fallback**까지 시도해야 함
+7. 논문 caption은 영어인데, **영문 원문 caption을 먼저 정확히 추출한 뒤 한국어로 번역해서 PPT에 표시**해야 함
 
 ---
 
@@ -42,13 +36,14 @@
 
 아래 부분만 수정해주세요.
 
-1. PDF에서 대표 figure/image 후보를 추출하는 로직
+1. PDF에서 representative figure/image 후보를 추출하는 로직
 2. figure/image 중복 제거 로직
 3. figure caption 추출 및 이미지와 매칭하는 로직
 4. figure caption 번역 로직
 5. PPT에 이미지 아래 caption을 넣는 로직
-6. 이미지 추출 실패 시 fallback crop 로직
-7. 관련 로그 및 fallback 처리
+6. figure image crop 정확도 개선
+7. embedded image 추출 실패 시 fallback crop 로직
+8. 관련 로그 및 fallback 처리
 
 ---
 
@@ -63,9 +58,10 @@
 1. 같은 이미지 2번 선택
 2. 같은 figure 번호 2번 선택
 3. 같은 caption을 가진 figure 2번 선택
-4. 거의 동일한 이미지(중복 이미지) 선택
+4. 같은 figure group 안의 subfigure 조각을 따로따로 선택
+5. 거의 동일한 이미지(중복 이미지) 선택
 
-즉, 대표 이미지 2개는 반드시 **서로 다른 의미를 가진 figure**여야 합니다.
+즉, 대표 이미지 2개는 반드시 **서로 다른 figure group 2개**여야 합니다.
 
 ---
 
@@ -73,17 +69,17 @@
 
 이미지 아래에는 반드시 **PDF 원문에 있는 실제 figure caption**을 사용해야 합니다.
 
-예를 들어 PDF 원문에 아래처럼 있으면,
+예를 들어 원문이 아래와 같으면,
 
 * `Fig. 1. Circuit diagram of 3ph LCL-filtered VSC IOBC system`
 * `Fig. 2. Experimental set-up for L2 and R2 measurement of IM`
 * `Fig. 3. Equivalent block diagram of LCL-filtered VSC.`
 
-이런 **영문 원문 caption을 먼저 추출**해야 합니다.
+이 **영문 원문 caption을 먼저 정확히 추출**해야 합니다.
 
-그 다음, 이 원문 caption을 **한국어로 번역해서 PPT에 표시**해주세요.
+그 다음, 이 `original_caption`을 **한국어로 번역한 `translated_caption`**을 만들어서 PPT에 표시해주세요.
 
-즉 처리 순서는 반드시 아래처럼 해야 합니다.
+즉, 처리 순서는 반드시 아래처럼 해야 합니다.
 
 ```text
 PDF에서 실제 영문 caption 원문 추출
@@ -98,7 +94,7 @@ PDF에서 실제 영문 caption 원문 추출
 중요한 점:
 
 * caption은 **AI가 새로 만들거나 추측하면 안 됩니다**
-* 반드시 **PDF에서 추출한 original_caption**을 기준으로만 번역해야 합니다
+* 반드시 **PDF에서 추출한 original_caption**만 기준으로 번역해야 합니다
 * figure 번호(`Fig. 1.` 등)는 번역 과정에서도 유지해야 합니다
 
 예:
@@ -108,7 +104,28 @@ PDF에서 실제 영문 caption 원문 추출
 
 ---
 
-# 4. figure candidate 데이터 구조
+# 4. 중요한 처리 원칙: caption 추출과 이미지 crop은 분리
+
+중요: figure caption은 **최종 crop 이미지에서 OCR로 다시 읽는 방식이 아니라**,
+**crop 전에 PDF 텍스트 레이어에서 먼저 추출 및 매칭**해주세요.
+
+즉 아래 순서로 처리해야 합니다.
+
+```text
+1. 페이지에서 Fig./Figure/그림 caption 텍스트 탐지
+2. 해당 caption을 original_caption으로 저장
+3. caption bbox와 연결된 figure visual group 영역 계산
+4. figure visual group만 crop
+5. PPT에는 crop된 figure 이미지 + translated_caption(또는 original_caption) 조합으로 표시
+```
+
+즉, **caption을 먼저 확보한 뒤 이미지 영역만 깔끔하게 crop**해야 합니다.
+최종 crop 이미지에는 caption 텍스트와 본문 문단이 포함되지 않아야 하지만,
+그렇다고 caption 인식이 사라지면 안 됩니다. caption은 반드시 **이미지 crop 이전 단계에서 별도로 확보**해주세요.
+
+---
+
+# 5. figure candidate 데이터 구조
 
 figure 하나당 최소 아래 정보를 같이 관리해주세요.
 
@@ -116,29 +133,32 @@ figure 하나당 최소 아래 정보를 같이 관리해주세요.
 {
     "paper_id": "...",
     "page_number": 5,
+    "figure_number": "Fig. 5",
+    "group_bbox": [x0, y0, x1, y1],
     "image_path": "...",
-    "bbox": [x0, y0, x1, y1],
     "width": 800,
     "height": 500,
     "image_hash": "...",
-    "figure_number": "Fig. 5",
+    "subfigures": ["(a)", "(b)"],
     "original_caption": "Fig. 5. Frequency response of the system (a) Open loop plant (b) Open current loop system with closed damping loop.",
     "translated_caption": "Fig. 5. 시스템 주파수 응답: (a) 개방 루프 플랜트, (b) 감쇠 루프가 닫힌 개방 전류 루프 시스템",
     "caption_bbox": [x0, y0, x1, y1],
     "caption_source": "below_image_text",
+    "crop_source": "visual_blocks_above_caption",
+    "contains_body_text": false,
     "selection_reason": ""
 }
 ```
 
 ---
 
-# 5. caption 추출 로직 개선 요청
+# 6. caption 추출 로직 개선 요청
 
 caption은 반드시 **이미지 주변 텍스트에서 직접 찾아야 합니다.**
 
 ## 우선순위 1: 이미지 바로 아래 텍스트
 
-같은 페이지에서 **이미지 bbox 바로 아래쪽에 있는 텍스트 블록**을 가장 먼저 탐색해주세요.
+같은 페이지에서 **이미지 bbox 또는 figure group bbox 바로 아래쪽에 있는 텍스트 블록**을 가장 먼저 탐색해주세요.
 
 예시 조건:
 
@@ -196,28 +216,159 @@ Open current loop system with closed damping loop.
 
 ---
 
-## 우선순위 4: (a), (b) 하위 그림 처리
+## 우선순위 4: (a), (b), (c) 하위 그림 처리
 
-하나의 figure 안에 `(a)`, `(b)`가 포함된 경우, `(a)`, `(b)` 자체를 제목으로 쓰면 안 됩니다.
+하나의 figure 안에 `(a)`, `(b)`, `(c)`가 포함된 경우, 이를 각각 독립 figure로 처리하지 말고 **하나의 figure group**으로 처리해주세요.
 
-예를 들어 구조가 아래와 같으면,
+예를 들어:
 
 ```text
-[이미지 a]
-(a)
+[그래프 a] [그래프 b]
+(a)        (b)
 
-[이미지 b]
-(b)
-
-Fig. 13. Test result waveforms at (a) Grid inductance change 0 to 1500 μH (b) Grid inductance change 0 to 3 mH.
+Fig. 5. Frequency response of the system (a) Open loop plant (b) Open current loop system with closed damping loop.
 ```
 
-실제 caption은 맨 아래의 `Fig. 13...` 전체입니다.
-즉 `(a)`, `(b)`를 caption으로 잘못 인식하지 말고, **맨 아래의 실제 figure caption 전체를 잡아야 합니다.**
+또는
+
+```text
+[그래프 a]
+(a)
+
+[그래프 b]
+(b)
+
+[그래프 c]
+(c)
+
+Fig. 13. Test result waveforms at (a) ...
+```
+
+이 경우 `(a)`, `(b)`, `(c)` 자체를 caption으로 쓰면 안 되고,
+**Fig. 5 전체 / Fig. 13 전체를 하나의 figure group으로 묶어서 관리**해야 합니다.
 
 ---
 
-# 6. 이미지 추출 로직 개선 요청
+# 7. figure 이미지 crop 정확도 개선 요청
+
+현재 일부 결과에서는 figure 이미지 영역만 가져와야 하는데, 주변 본문 문단이나 caption까지 함께 crop되고 있습니다.
+이 부분을 반드시 수정해주세요.
+
+## 핵심 원칙
+
+최종 crop 이미지에는 아래만 포함되어야 합니다.
+
+* 그림
+* 그래프
+* 사진
+* 도식
+* 그래프 내부 축/범례/수치 텍스트
+* 도식 내부 라벨
+* subfigure label: `(a)`, `(b)`, `(c)`
+
+최종 crop 이미지에는 아래가 포함되면 안 됩니다.
+
+* 본문 문단 텍스트
+* 이전/다음 section 제목
+* 다른 figure caption
+* 참고문헌
+* 현재 figure caption 텍스트 자체
+
+즉 PPT에는 아래 구조여야 합니다.
+
+```text
+[figure image only]
+Fig. X. ... (translated_caption 또는 original_caption)
+```
+
+caption은 이미지 안에 같이 crop하지 말고, **별도 텍스트로 관리**해서 PPT 이미지 아래에 표시해주세요.
+
+---
+
+# 8. figure group 단위로 추출
+
+논문 figure는 개별 이미지 조각이 아니라, **하나의 caption에 연결된 figure group 단위**로 추출해야 합니다.
+
+잘못된 방식:
+
+* Fig. 5의 (a)만 따로 추출
+* Fig. 5의 (b)만 따로 추출
+* 같은 figure의 부분 조각을 대표 이미지로 별도 선택
+
+올바른 방식:
+
+* Fig. 5 전체 group 추출
+* Fig. 13 전체 group 추출
+
+즉, 대표 이미지 2개는 **개별 조각이 아니라 서로 다른 figure group 2개**여야 합니다.
+
+---
+
+# 9. crop 영역 계산 방식
+
+caption bbox를 기준으로 figure 영역을 추정할 때, caption 바로 위 전체를 무작정 잘라오면 본문 텍스트가 섞일 수 있습니다.
+따라서 아래 방식으로 개선해주세요.
+
+## 권장 방식
+
+1. 먼저 페이지에서 `Fig.`, `Figure`, `그림` caption bbox를 찾는다.
+2. caption 바로 위쪽에서 figure 후보 영역을 찾는다.
+3. figure 후보 영역에는 아래만 포함한다.
+
+   * 이미지 객체
+   * 그래프
+   * 도식
+   * 사진
+   * subfigure label `(a), (b), (c)`
+   * 그래프 내부 축/범례/수치 텍스트
+4. 아래는 포함하지 않는다.
+
+   * 본문 문단 텍스트
+   * 이전/다음 section 제목
+   * 다른 figure caption
+   * 참고문헌/본문 설명 문단
+5. caption은 crop 이미지에 포함하지 말고 별도 텍스트로 관리한다.
+
+가능하면 아래 정보를 같이 활용해주세요.
+
+```python
+page.get_images()
+page.get_text("dict")의 image block
+page.get_drawings()
+text block bbox
+caption bbox
+```
+
+embedded image가 없고 그래프가 벡터로 구성된 경우에는 `page.get_drawings()` 또는 page render 기반 crop을 사용하되,
+본문 텍스트 영역은 제외하고 figure visual 영역만 포함되도록 bbox를 계산해주세요.
+
+---
+
+# 10. 본문 텍스트 제외 기준
+
+crop 이미지 안에 본문 문단이 많이 포함되면 **잘못된 crop**으로 보고 다시 조정해주세요.
+
+## 본문 텍스트로 보는 예시
+
+* 긴 문장 형태의 텍스트 블록
+* 마침표로 끝나는 본문 문장
+* 여러 줄로 이어지는 paragraph
+* `Abstract`, `Introduction`, `Conclusion`, `References` 같은 섹션 텍스트
+
+## figure 내부 텍스트로 허용하는 예시
+
+* 축 이름: `Frequency (Hz)`, `Magnitude (dB)`
+* 범례: `Proposed`, `Separated`
+* 수치: `0`, `100`, `200`
+* subfigure label: `(a)`, `(b)`, `(c)`
+* 그래프 제목/주석
+* 도식 내부 라벨
+
+즉, **그래프 안의 글자는 남겨야 하고, figure 바깥의 본문 문장은 제거해야 합니다.**
+
+---
+
+# 11. 이미지 추출 fallback 로직 개선 요청
 
 일부 논문은 embedded image 추출이 안 되거나, figure가 벡터/페이지 객체 형태라서 일반적인 `extract_images()` 방식만으로는 이미지 추출이 실패할 수 있습니다.
 
@@ -230,19 +381,19 @@ Fig. 13. Test result waveforms at (a) Grid inductance change 0 to 1500 μH (b) G
 2. 각 caption의 bbox를 저장한다.
 3. embedded image 추출을 시도한다.
 4. 실패하면 PDF 페이지를 렌더링한다.
-5. caption bbox 기준으로 바로 위쪽 영역을 figure 영역으로 추정한다.
-6. 그 영역을 crop해서 figure 이미지로 저장한다.
+5. caption bbox 기준으로 바로 위쪽 영역에서 figure visual group을 추정한다.
+6. 해당 visual group 영역만 crop해서 figure image로 저장한다.
 7. crop된 이미지와 original_caption을 하나의 figure candidate로 묶는다.
 8. embedded image 결과와 crop 결과를 합쳐 중복 제거한다.
-9. 최종 대표 figure 2개를 선택한다.
+9. 최종 representative figure 2개를 선택한다.
 ```
 
 즉, embedded image 추출 실패 시에도
-**page render + caption 기준 crop 방식으로 figure를 복구**할 수 있게 해주세요.
+**page render + figure group crop 방식으로 복구**할 수 있게 해주세요.
 
 ---
 
-# 7. 중복 이미지 방지 로직
+# 12. 중복 이미지 방지 로직
 
 대표 이미지 2개를 고를 때 아래 기준으로 중복을 제거해주세요.
 
@@ -251,7 +402,7 @@ Fig. 13. Test result waveforms at (a) Grid inductance change 0 to 1500 μH (b) G
 가능한 항목을 복합적으로 사용해주세요.
 
 1. `image_hash` 동일
-2. `page_number + bbox` 거의 동일
+2. `page_number + group_bbox` 거의 동일
 3. 이미지 width/height 및 파일 크기 유사
 4. perceptual hash distance가 매우 작음
 5. `figure_number` 동일
@@ -262,12 +413,13 @@ Fig. 13. Test result waveforms at (a) Grid inductance change 0 to 1500 μH (b) G
 * 같은 이미지
 * 같은 figure
 * 같은 caption
+* 같은 figure group
 
-대표 이미지 2개는 반드시 **서로 다른 figure**여야 합니다.
+대표 이미지 2개는 반드시 **서로 다른 figure group**이어야 합니다.
 
 ---
 
-# 8. AI API 역할 제한
+# 13. AI API 역할 제한
 
 중요합니다.
 
@@ -280,16 +432,17 @@ AI API는 아래 역할만 담당하게 해주세요.
 1. 이미 추출된 figure 후보들 중에서 **대표성 높은 2개 선택**
 2. 필요 시 너무 긴 caption을 PPT용으로 짧게 요약
 3. figure 선택 이유 설명
-4. original_caption을 기반으로 translated_caption 생성
+4. **original_caption을 기준으로 translated_caption 생성**
 
 즉 전체 흐름은 아래처럼 되어야 합니다.
 
 ```text
 PDF 파싱
-→ 이미지 bbox 추출
-→ 이미지 아래/주변 caption 직접 추출
+→ caption 텍스트 직접 추출
 → original_caption 저장
-→ page crop fallback 포함 figure 후보 생성
+→ figure visual group 계산
+→ figure image crop
+→ figure candidate 생성
 → 중복 제거
 → AI에게 후보 리스트 전달
 → AI는 대표 figure 2개만 선택
@@ -299,7 +452,7 @@ PDF 파싱
 
 ---
 
-# 9. AI 프롬프트 수정 요청
+# 14. AI 프롬프트 수정 요청
 
 대표 figure 선택 및 번역을 AI에 맡기는 경우, 아래 조건을 프롬프트에 반드시 추가해주세요.
 
@@ -308,12 +461,14 @@ PDF 파싱
 ```text
 You will receive a list of figure candidates extracted from the PDF.
 Each candidate already contains the original caption detected from the paper.
+Each candidate represents a full figure group, not a cropped subfigure fragment.
+
 Select exactly two representative figures.
 Do not create a new caption.
 Do not guess a caption.
 Use the provided original_caption field only.
 Do not select duplicate figures.
-Do not select two candidates with the same image_hash, same figure_number, or same original_caption.
+Do not select two candidates with the same image_hash, same figure_number, same original_caption, or same group_bbox.
 If original_caption is missing, prefer another figure with a valid caption.
 
 Also translate the original_caption into Korean.
@@ -327,10 +482,12 @@ Return JSON only.
 ```text
 PDF에서 추출된 figure 후보 리스트가 제공됩니다.
 각 후보에는 PDF 원문에서 추출한 original_caption이 포함되어 있습니다.
+각 후보는 subfigure 조각이 아니라 전체 figure group입니다.
+
 대표 figure 2개만 선택하세요.
 caption을 새로 만들거나 추측하지 마세요.
 반드시 제공된 original_caption만 사용하세요.
-image_hash, figure_number, original_caption이 같은 후보를 중복 선택하지 마세요.
+image_hash, figure_number, original_caption, group_bbox가 같은 후보를 중복 선택하지 마세요.
 original_caption이 없는 후보보다 caption이 정상적으로 추출된 후보를 우선 선택하세요.
 
 또한 original_caption을 한국어로 번역해주세요.
@@ -341,7 +498,7 @@ original_caption이 없는 후보보다 caption이 정상적으로 추출된 후
 
 ---
 
-# 10. `Fig.Fig.` 중복 prefix 방지
+# 15. `Fig.Fig.` 중복 prefix 방지
 
 현재 일부 결과에서 아래처럼 잘못 표시되는 문제가 있습니다.
 
@@ -374,14 +531,14 @@ else:
     display_caption = f"Fig. {figure_number}. {original_caption}"
 ```
 
-핵심은:
+핵심:
 
 * `original_caption`이 이미 `Fig.` / `Figure` / `그림`으로 시작하면 앞에 다시 붙이지 말 것
 * `Fig.Fig.` 같은 중복 prefix 금지
 
 ---
 
-# 11. PPT caption 표시 우선순위
+# 16. PPT caption 표시 우선순위
 
 PPT에는 아래 우선순위로 caption을 표시해주세요.
 
@@ -404,7 +561,7 @@ else:
 
 ---
 
-# 12. fallback 처리 규칙
+# 17. fallback 처리 규칙
 
 아래 경우에만 마지막 수단으로 fallback 문구를 사용해주세요.
 
@@ -426,8 +583,8 @@ else:
 이미지 추출도 아래 경우에만 최종 실패 처리해주세요.
 
 1. embedded image 추출 실패
-2. page render 후 figure crop 시도 실패
-3. caption bbox 기준 crop 시도 실패
+2. page render 후 figure group crop 시도 실패
+3. caption bbox 기준 visual group crop 시도 실패
 
 그때만 아래 문구를 사용해주세요.
 
@@ -439,16 +596,18 @@ else:
 
 ---
 
-# 13. 로그 개선 요청
+# 18. 로그 개선 요청
 
 추후 검증할 수 있도록 아래 로그를 남겨주세요.
 
-1. 어떤 figure 후보가 생성되었는지
+1. 어떤 figure candidate가 생성되었는지
 2. original_caption이 무엇인지
 3. translated_caption이 무엇인지
 4. 어떤 이유로 대표 이미지 2개가 선택되었는지
 5. 어떤 이유로 caption fallback이 발생했는지
 6. 어떤 이유로 image fallback이 발생했는지
+7. crop 이미지에 본문 텍스트가 포함되었는지 여부
+8. crop source가 embedded image인지 page crop인지
 
 예:
 
@@ -456,6 +615,8 @@ else:
 [INFO] figure candidate created: paper=..., page=..., figure_number=Fig. 5
 [INFO] original_caption=...
 [INFO] translated_caption=...
+[INFO] crop_source=visual_blocks_above_caption
+[INFO] contains_body_text=false
 [INFO] selected representative figure: reason=...
 [WARN] caption not detected: paper=..., page=..., bbox=...
 [WARN] image extraction failed, crop fallback used: paper=..., page=...
@@ -464,7 +625,7 @@ else:
 
 ---
 
-# 14. 금지 사항
+# 19. 금지 사항
 
 아래는 금지해주세요.
 
@@ -474,17 +635,19 @@ else:
 4. caption이 존재하는데 `"캡션 확인 필요"` fallback 사용
 5. embedded image 추출 실패만으로 바로 `"이미지 추출 불가"` 처리
 6. 번역 과정에서 figure 번호 삭제
-7. 동일 figure / 동일 caption 중복 선택
+7. 동일 figure / 동일 caption / 동일 figure group 중복 선택
+8. figure 바깥 본문 문단이 이미지 crop에 포함되는 것
+9. caption까지 이미지 안에 같이 crop하는 것
 
 ---
 
-# 15. 테스트 및 검증 기준
+# 20. 테스트 및 검증 기준
 
 수정 후에는 **7개 PDF 전체에 대해** 아래 항목을 테스트해주세요.
 
 1. 각 논문마다 대표 이미지 2개가 들어가는지
-2. 두 이미지가 서로 다른 이미지인지
-3. 동일한 figure / 동일한 caption이 중복 선택되지 않는지
+2. 두 이미지가 서로 다른 figure group인지
+3. 동일한 figure / 동일한 caption / 동일한 figure group이 중복 선택되지 않는지
 4. 이미지 아래에 실제 논문의 `Fig. ...` caption 원문이 추출되는지
 5. PPT에는 해당 caption의 한국어 번역본이 우선 표시되는지
 6. `translated_caption`이 없으면 `original_caption`이 표시되는지
@@ -493,22 +656,29 @@ else:
 9. `"Fig.Fig. 1. 이미지 추출 불가로 원본 확인 필요"` 같은 잘못된 문구가 나오지 않는지
 10. embedded image 추출 실패 시 page crop 방식으로 복구되는지
 11. caption이 존재하는 figure는 실제 PDF caption 기반으로 표시되는지
-12. 기존 PPT 생성 기능, 레이아웃, 요약 기능은 그대로 유지되는지
+12. crop 이미지에 figure 바깥 본문 문단이 포함되지 않는지
+13. crop 이미지에는 그래프/도식/사진과 내부 라벨만 남고, caption은 별도 텍스트로 처리되는지
+14. 같은 caption 아래 연관된 `(a), (b), (c)` 그래프들은 하나의 figure group으로 잘 처리되는지
+15. 기존 PPT 생성 기능, 레이아웃, 요약 기능은 그대로 유지되는지
 
 ---
 
-# 16. 최종 요청 요약
+# 21. 최종 요청 요약
 
 정리하면, **기존 잘 동작하는 기능과 구조는 변경하지 말고**,
-논문 PDF에서 **대표 이미지 2개를 중복 없이 선택**하고,
+논문 PDF에서 **대표 figure image 2개를 중복 없이 선택**하고,
 각 이미지 아래에는 **PDF 원문에 실제로 적혀 있는 영문 figure caption을 먼저 정확히 추출한 뒤**,
 그 caption을 **한국어로 번역해서 PPT에 표시**하도록 개선해주세요.
 
-핵심은 아래 6가지입니다.
+핵심은 아래 8가지입니다.
 
-1. **대표 이미지 2개는 서로 다른 figure여야 함**
+1. **대표 이미지 2개는 서로 다른 figure group이어야 함**
 2. **caption은 AI가 새로 만드는 것이 아니라 PDF 원문에서 직접 추출해야 함**
 3. **영문 원문 caption을 먼저 저장한 뒤, 그것만 기준으로 한국어 번역해야 함**
-4. **이미지 추출 실패 시 page crop fallback까지 시도해야 함**
-5. **`Fig.Fig.` 같은 중복 prefix, `그림1/그림2`, `캡션 확인 필요`, `이미지 추출 불가`가 불필요하게 나오면 안 됨**
-6. **기존 PPT 생성 흐름과 구조는 유지해야 함**
+4. **caption 추출과 image crop은 분리해야 함**
+5. **image crop은 figure visual 영역만 가져오고, 본문 문단과 caption은 포함하면 안 됨**
+6. **같은 caption 아래 묶인 `(a), (b), (c)` subfigure는 하나의 figure group으로 처리해야 함**
+7. **이미지 추출 실패 시 page crop fallback까지 시도해야 함**
+8. **`Fig.Fig.` 같은 중복 prefix, `그림1/그림2`, `캡션 확인 필요`, `이미지 추출 불가`가 불필요하게 나오면 안 됨**
+
+---
