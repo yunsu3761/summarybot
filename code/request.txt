@@ -1,0 +1,514 @@
+## Claude Code 전달용 요청서
+
+현재 **여러 개(약 7개)의 논문 PDF를 한 번에 읽어서 AI API 기반으로 PPT를 자동 생성하는 코드**를 어느 정도 구현해둔 상태입니다.
+**기존에 잘 동작하는 PPT 생성 기능, 전체 구조, 슬라이드 레이아웃, AI API 호출 방식, 텍스트 요약/정리 로직은 변경하지 말고**, 아래의 **논문 대표 이미지 2개 선택 및 해당 이미지의 실제 캡션 추출/표시 부분만 정확하게 개선**해주세요.
+
+---
+
+# 1. 수정 목적
+
+논문 PDF에서 대표 이미지 2개를 가져와 PPT에 넣을 때, 아래 문제가 발생하고 있습니다.
+
+1. **대표 이미지 2개를 뽑아야 하는데 동일한 이미지가 2번 들어가는 경우가 있음**
+2. 이미지 아래 제목이 실제 논문 캡션이 아니라 아래처럼 잘못 표시되는 경우가 있음
+
+   * `"그림1"`, `"그림2"`
+   * `"논문 p.9 대표 이미지 - 캡션 확인 필요"`
+   * `"Fig.Fig. 1. 이미지 추출 불가로 원본 확인 필요"`
+3. 실제 PDF에는 이미지 바로 아래에 **영문 figure caption**이 존재하는데, 이를 그대로 가져오지 못하고 있음
+4. 일부 PDF는 embedded image 추출에 실패해서 이미지 자체를 못 가져오고 fallback 문구로 처리되는 경우가 있음
+
+내가 원하는 최종 동작은 다음과 같습니다.
+
+* **논문 1개당 대표 이미지 2개만 선택**
+* **동일한 이미지 / 동일 figure / 동일 caption 중복 선택 금지**
+* **이미지 아래에는 PDF 원문에 있는 실제 영문 caption을 먼저 정확히 추출**
+* **그 후 그 영문 caption을 한국어로 번역하여 PPT에 표시**
+* **caption이나 이미지가 실제로 존재하는데도 fallback 문구가 뜨지 않게 수정**
+* **기존 PPT 생성 전체 흐름과 구조는 유지**
+
+---
+
+# 2. 수정 범위 제한
+
+아래 기능은 **절대 변경하지 말아주세요.**
+
+1. 기존 PPT 자동 생성 전체 흐름
+2. 기존 슬라이드 레이아웃 구조
+3. 기존 AI API 호출 구조
+4. 기존 논문 요약 / 기술 설명 생성 로직
+5. 기존 저장 경로 / 파일명 규칙
+6. 기존 정상 동작하는 텍스트 생성 로직
+
+아래 부분만 수정해주세요.
+
+1. PDF에서 대표 figure/image 후보를 추출하는 로직
+2. figure/image 중복 제거 로직
+3. figure caption 추출 및 이미지와 매칭하는 로직
+4. figure caption 번역 로직
+5. PPT에 이미지 아래 caption을 넣는 로직
+6. 이미지 추출 실패 시 fallback crop 로직
+7. 관련 로그 및 fallback 처리
+
+---
+
+# 3. 원하는 최종 동작
+
+## 3-1. 대표 이미지 2개 선택 규칙
+
+각 논문 PDF마다 대표 figure 이미지는 **정확히 2개만** 선택해주세요.
+
+단, 아래는 금지입니다.
+
+1. 같은 이미지 2번 선택
+2. 같은 figure 번호 2번 선택
+3. 같은 caption을 가진 figure 2번 선택
+4. 거의 동일한 이미지(중복 이미지) 선택
+
+즉, 대표 이미지 2개는 반드시 **서로 다른 의미를 가진 figure**여야 합니다.
+
+---
+
+## 3-2. caption 처리 규칙
+
+이미지 아래에는 반드시 **PDF 원문에 있는 실제 figure caption**을 사용해야 합니다.
+
+예를 들어 PDF 원문에 아래처럼 있으면,
+
+* `Fig. 1. Circuit diagram of 3ph LCL-filtered VSC IOBC system`
+* `Fig. 2. Experimental set-up for L2 and R2 measurement of IM`
+* `Fig. 3. Equivalent block diagram of LCL-filtered VSC.`
+
+이런 **영문 원문 caption을 먼저 추출**해야 합니다.
+
+그 다음, 이 원문 caption을 **한국어로 번역해서 PPT에 표시**해주세요.
+
+즉 처리 순서는 반드시 아래처럼 해야 합니다.
+
+```text
+PDF에서 실제 영문 caption 원문 추출
+→ original_caption 저장
+→ original_caption을 한국어로 번역
+→ translated_caption 저장
+→ PPT에는 translated_caption을 우선 표시
+→ translated_caption이 없으면 original_caption 표시
+→ 둘 다 없을 때만 마지막 fallback 사용
+```
+
+중요한 점:
+
+* caption은 **AI가 새로 만들거나 추측하면 안 됩니다**
+* 반드시 **PDF에서 추출한 original_caption**을 기준으로만 번역해야 합니다
+* figure 번호(`Fig. 1.` 등)는 번역 과정에서도 유지해야 합니다
+
+예:
+
+* `Fig. 1. Circuit diagram of 3ph LCL-filtered VSC IOBC system`
+  → `Fig. 1. 3상 LCL 필터 VSC IOBC 시스템 회로도`
+
+---
+
+# 4. figure candidate 데이터 구조
+
+figure 하나당 최소 아래 정보를 같이 관리해주세요.
+
+```python
+{
+    "paper_id": "...",
+    "page_number": 5,
+    "image_path": "...",
+    "bbox": [x0, y0, x1, y1],
+    "width": 800,
+    "height": 500,
+    "image_hash": "...",
+    "figure_number": "Fig. 5",
+    "original_caption": "Fig. 5. Frequency response of the system (a) Open loop plant (b) Open current loop system with closed damping loop.",
+    "translated_caption": "Fig. 5. 시스템 주파수 응답: (a) 개방 루프 플랜트, (b) 감쇠 루프가 닫힌 개방 전류 루프 시스템",
+    "caption_bbox": [x0, y0, x1, y1],
+    "caption_source": "below_image_text",
+    "selection_reason": ""
+}
+```
+
+---
+
+# 5. caption 추출 로직 개선 요청
+
+caption은 반드시 **이미지 주변 텍스트에서 직접 찾아야 합니다.**
+
+## 우선순위 1: 이미지 바로 아래 텍스트
+
+같은 페이지에서 **이미지 bbox 바로 아래쪽에 있는 텍스트 블록**을 가장 먼저 탐색해주세요.
+
+예시 조건:
+
+```python
+text_block.y0 > image_bbox.y1
+```
+
+추가로 아래도 고려해주세요.
+
+* 이미지와 x축이 어느 정도 겹치는 텍스트를 우선
+* 이미지와 너무 멀리 떨어진 텍스트는 제외
+* 가장 가까운 caption 후보를 우선 선택
+
+---
+
+## 우선순위 2: Fig./Figure/그림 패턴 탐지
+
+아래 패턴으로 시작하는 텍스트를 caption 후보로 인식해주세요.
+
+* `Fig. 1.`
+* `Fig. 2.`
+* `Figure 1.`
+* `Figure 2.`
+* `그림 1.`
+* `그림 2.`
+
+예시 정규식:
+
+```python
+caption_pattern = r"^(Fig\.|Figure|그림)\s*\d+[\.\:]?\s+.*"
+```
+
+---
+
+## 우선순위 3: 여러 줄 caption 병합
+
+논문 caption은 여러 줄로 끊겨 있는 경우가 많습니다.
+따라서 첫 줄만 가져오지 말고, **바로 이어지는 다음 줄들도 병합**해주세요.
+
+예:
+
+```text
+Fig. 5. Frequency response of the system (a) Open loop plant (b)
+Open current loop system with closed damping loop.
+```
+
+이 경우 한 줄로 합쳐서 저장해야 합니다.
+
+단, 아래는 포함하면 안 됩니다.
+
+* 본문 문단까지 과도하게 이어붙이는 것
+* 다음 section 제목
+* 다음 figure caption
+* 너무 멀리 떨어진 텍스트
+
+---
+
+## 우선순위 4: (a), (b) 하위 그림 처리
+
+하나의 figure 안에 `(a)`, `(b)`가 포함된 경우, `(a)`, `(b)` 자체를 제목으로 쓰면 안 됩니다.
+
+예를 들어 구조가 아래와 같으면,
+
+```text
+[이미지 a]
+(a)
+
+[이미지 b]
+(b)
+
+Fig. 13. Test result waveforms at (a) Grid inductance change 0 to 1500 μH (b) Grid inductance change 0 to 3 mH.
+```
+
+실제 caption은 맨 아래의 `Fig. 13...` 전체입니다.
+즉 `(a)`, `(b)`를 caption으로 잘못 인식하지 말고, **맨 아래의 실제 figure caption 전체를 잡아야 합니다.**
+
+---
+
+# 6. 이미지 추출 로직 개선 요청
+
+일부 논문은 embedded image 추출이 안 되거나, figure가 벡터/페이지 객체 형태라서 일반적인 `extract_images()` 방식만으로는 이미지 추출이 실패할 수 있습니다.
+
+따라서 **이미지 추출 실패 시 바로 포기하지 말고**, 아래 fallback 로직을 추가해주세요.
+
+## 권장 처리 순서
+
+```text
+1. PDF에서 Fig./Figure/그림 caption 후보를 먼저 찾는다.
+2. 각 caption의 bbox를 저장한다.
+3. embedded image 추출을 시도한다.
+4. 실패하면 PDF 페이지를 렌더링한다.
+5. caption bbox 기준으로 바로 위쪽 영역을 figure 영역으로 추정한다.
+6. 그 영역을 crop해서 figure 이미지로 저장한다.
+7. crop된 이미지와 original_caption을 하나의 figure candidate로 묶는다.
+8. embedded image 결과와 crop 결과를 합쳐 중복 제거한다.
+9. 최종 대표 figure 2개를 선택한다.
+```
+
+즉, embedded image 추출 실패 시에도
+**page render + caption 기준 crop 방식으로 figure를 복구**할 수 있게 해주세요.
+
+---
+
+# 7. 중복 이미지 방지 로직
+
+대표 이미지 2개를 고를 때 아래 기준으로 중복을 제거해주세요.
+
+## 중복 판단 기준
+
+가능한 항목을 복합적으로 사용해주세요.
+
+1. `image_hash` 동일
+2. `page_number + bbox` 거의 동일
+3. 이미지 width/height 및 파일 크기 유사
+4. perceptual hash distance가 매우 작음
+5. `figure_number` 동일
+6. `original_caption` 동일
+
+즉 아래 중 하나라도 강하게 같으면 중복으로 판단해주세요.
+
+* 같은 이미지
+* 같은 figure
+* 같은 caption
+
+대표 이미지 2개는 반드시 **서로 다른 figure**여야 합니다.
+
+---
+
+# 8. AI API 역할 제한
+
+중요합니다.
+
+**caption 추출 자체를 AI API에게 맡기지 말아주세요.**
+
+caption은 반드시 **PDF 파싱 로직에서 직접 추출**해야 합니다.
+
+AI API는 아래 역할만 담당하게 해주세요.
+
+1. 이미 추출된 figure 후보들 중에서 **대표성 높은 2개 선택**
+2. 필요 시 너무 긴 caption을 PPT용으로 짧게 요약
+3. figure 선택 이유 설명
+4. original_caption을 기반으로 translated_caption 생성
+
+즉 전체 흐름은 아래처럼 되어야 합니다.
+
+```text
+PDF 파싱
+→ 이미지 bbox 추출
+→ 이미지 아래/주변 caption 직접 추출
+→ original_caption 저장
+→ page crop fallback 포함 figure 후보 생성
+→ 중복 제거
+→ AI에게 후보 리스트 전달
+→ AI는 대표 figure 2개만 선택
+→ original_caption 기반으로 translated_caption 생성
+→ PPT에는 translated_caption 우선 표시
+```
+
+---
+
+# 9. AI 프롬프트 수정 요청
+
+대표 figure 선택 및 번역을 AI에 맡기는 경우, 아래 조건을 프롬프트에 반드시 추가해주세요.
+
+## 영문 프롬프트 예시
+
+```text
+You will receive a list of figure candidates extracted from the PDF.
+Each candidate already contains the original caption detected from the paper.
+Select exactly two representative figures.
+Do not create a new caption.
+Do not guess a caption.
+Use the provided original_caption field only.
+Do not select duplicate figures.
+Do not select two candidates with the same image_hash, same figure_number, or same original_caption.
+If original_caption is missing, prefer another figure with a valid caption.
+
+Also translate the original_caption into Korean.
+Keep the figure number (e.g. Fig. 1.) unchanged in the translated result.
+
+Return JSON only.
+```
+
+## 한국어 프롬프트 예시
+
+```text
+PDF에서 추출된 figure 후보 리스트가 제공됩니다.
+각 후보에는 PDF 원문에서 추출한 original_caption이 포함되어 있습니다.
+대표 figure 2개만 선택하세요.
+caption을 새로 만들거나 추측하지 마세요.
+반드시 제공된 original_caption만 사용하세요.
+image_hash, figure_number, original_caption이 같은 후보를 중복 선택하지 마세요.
+original_caption이 없는 후보보다 caption이 정상적으로 추출된 후보를 우선 선택하세요.
+
+또한 original_caption을 한국어로 번역해주세요.
+번역 시 Fig. 번호는 유지하세요.
+
+결과는 JSON으로만 반환하세요.
+```
+
+---
+
+# 10. `Fig.Fig.` 중복 prefix 방지
+
+현재 일부 결과에서 아래처럼 잘못 표시되는 문제가 있습니다.
+
+* `Fig.Fig. 1. 이미지 추출 불가로 원본 확인 필요`
+* `Fig.Fig. 11. 이미지 추출 불가로 원본 확인 필요`
+
+이 문제도 반드시 수정해주세요.
+
+## 수정 규칙
+
+caption 표시 전 정규화 함수를 추가해서 `Fig.` prefix가 중복되지 않게 해주세요.
+
+예시:
+
+```python
+def normalize_caption(caption: str) -> str:
+    caption = caption.strip()
+    caption = re.sub(r"^Fig\.?\s*Fig\.?\s*", "Fig. ", caption)
+    caption = re.sub(r"^Figure\.?\s*Figure\.?\s*", "Figure ", caption)
+    caption = re.sub(r"\s+", " ", caption)
+    return caption
+```
+
+또는 아래 규칙으로 처리해주세요.
+
+```python
+if original_caption.startswith(("Fig.", "Figure", "그림")):
+    display_caption = original_caption
+else:
+    display_caption = f"Fig. {figure_number}. {original_caption}"
+```
+
+핵심은:
+
+* `original_caption`이 이미 `Fig.` / `Figure` / `그림`으로 시작하면 앞에 다시 붙이지 말 것
+* `Fig.Fig.` 같은 중복 prefix 금지
+
+---
+
+# 11. PPT caption 표시 우선순위
+
+PPT에는 아래 우선순위로 caption을 표시해주세요.
+
+```python
+if figure.get("translated_caption"):
+    display_caption = figure["translated_caption"]
+elif figure.get("original_caption"):
+    display_caption = figure["original_caption"]
+else:
+    display_caption = f"논문 p.{page_number} 대표 이미지 - 캡션 확인 필요"
+```
+
+중요한 점:
+
+* `original_caption`이 존재하는데도 fallback 문구로 넘어가면 안 됩니다.
+* `translated_caption`이 있으면 그것을 우선 사용합니다.
+* `translated_caption`이 없으면 `original_caption`을 사용합니다.
+* 둘 다 없을 때만 fallback 문구를 사용합니다.
+* `"그림1"`, `"그림2"` 같은 임시 제목은 사용하지 마세요.
+
+---
+
+# 12. fallback 처리 규칙
+
+아래 경우에만 마지막 수단으로 fallback 문구를 사용해주세요.
+
+## caption fallback
+
+1. 이미지 바로 아래에서 caption을 못 찾음
+2. 같은 페이지 전체에서 `Fig.` / `Figure` / `그림` 패턴 caption을 못 찾음
+3. 주변 텍스트 블록에서도 관련 caption을 못 찾음
+4. figure number 매칭도 실패함
+
+그때만 아래 형식을 사용해주세요.
+
+```text
+논문 p.{page_number} 대표 이미지 - 캡션 확인 필요
+```
+
+## image fallback
+
+이미지 추출도 아래 경우에만 최종 실패 처리해주세요.
+
+1. embedded image 추출 실패
+2. page render 후 figure crop 시도 실패
+3. caption bbox 기준 crop 시도 실패
+
+그때만 아래 문구를 사용해주세요.
+
+```text
+이미지 추출 불가로 원본 확인 필요
+```
+
+즉, **실제 caption과 이미지가 있는 논문인데 fallback이 뜨는 경우가 없어야 합니다.**
+
+---
+
+# 13. 로그 개선 요청
+
+추후 검증할 수 있도록 아래 로그를 남겨주세요.
+
+1. 어떤 figure 후보가 생성되었는지
+2. original_caption이 무엇인지
+3. translated_caption이 무엇인지
+4. 어떤 이유로 대표 이미지 2개가 선택되었는지
+5. 어떤 이유로 caption fallback이 발생했는지
+6. 어떤 이유로 image fallback이 발생했는지
+
+예:
+
+```text
+[INFO] figure candidate created: paper=..., page=..., figure_number=Fig. 5
+[INFO] original_caption=...
+[INFO] translated_caption=...
+[INFO] selected representative figure: reason=...
+[WARN] caption not detected: paper=..., page=..., bbox=...
+[WARN] image extraction failed, crop fallback used: paper=..., page=...
+[ERROR] figure image extraction failed after all retries: paper=..., page=...
+```
+
+---
+
+# 14. 금지 사항
+
+아래는 금지해주세요.
+
+1. original_caption 없이 AI가 임의 제목 생성
+2. `Fig.Fig. 1.`처럼 중복 prefix 출력
+3. `"그림1"`, `"그림2"` 같은 임시 제목 출력
+4. caption이 존재하는데 `"캡션 확인 필요"` fallback 사용
+5. embedded image 추출 실패만으로 바로 `"이미지 추출 불가"` 처리
+6. 번역 과정에서 figure 번호 삭제
+7. 동일 figure / 동일 caption 중복 선택
+
+---
+
+# 15. 테스트 및 검증 기준
+
+수정 후에는 **7개 PDF 전체에 대해** 아래 항목을 테스트해주세요.
+
+1. 각 논문마다 대표 이미지 2개가 들어가는지
+2. 두 이미지가 서로 다른 이미지인지
+3. 동일한 figure / 동일한 caption이 중복 선택되지 않는지
+4. 이미지 아래에 실제 논문의 `Fig. ...` caption 원문이 추출되는지
+5. PPT에는 해당 caption의 한국어 번역본이 우선 표시되는지
+6. `translated_caption`이 없으면 `original_caption`이 표시되는지
+7. `"그림1"`, `"그림2"` 같은 임시 제목이 표시되지 않는지
+8. `"논문 p.x 대표 이미지 - 캡션 확인 필요"` 문구가 불필요하게 뜨지 않는지
+9. `"Fig.Fig. 1. 이미지 추출 불가로 원본 확인 필요"` 같은 잘못된 문구가 나오지 않는지
+10. embedded image 추출 실패 시 page crop 방식으로 복구되는지
+11. caption이 존재하는 figure는 실제 PDF caption 기반으로 표시되는지
+12. 기존 PPT 생성 기능, 레이아웃, 요약 기능은 그대로 유지되는지
+
+---
+
+# 16. 최종 요청 요약
+
+정리하면, **기존 잘 동작하는 기능과 구조는 변경하지 말고**,
+논문 PDF에서 **대표 이미지 2개를 중복 없이 선택**하고,
+각 이미지 아래에는 **PDF 원문에 실제로 적혀 있는 영문 figure caption을 먼저 정확히 추출한 뒤**,
+그 caption을 **한국어로 번역해서 PPT에 표시**하도록 개선해주세요.
+
+핵심은 아래 6가지입니다.
+
+1. **대표 이미지 2개는 서로 다른 figure여야 함**
+2. **caption은 AI가 새로 만드는 것이 아니라 PDF 원문에서 직접 추출해야 함**
+3. **영문 원문 caption을 먼저 저장한 뒤, 그것만 기준으로 한국어 번역해야 함**
+4. **이미지 추출 실패 시 page crop fallback까지 시도해야 함**
+5. **`Fig.Fig.` 같은 중복 prefix, `그림1/그림2`, `캡션 확인 필요`, `이미지 추출 불가`가 불필요하게 나오면 안 됨**
+6. **기존 PPT 생성 흐름과 구조는 유지해야 함**
