@@ -600,26 +600,118 @@ def trim_white_margin(png_bytes: bytes, pad: int = 6) -> bytes:
     return out.getvalue()
 
 
+_CAPTION_START_RE = re.compile(
+    r"^\s*(Fig\.?|Figure|그림|도면)\s*(\d+)([a-zA-Z])?\s*[\.\:\)]?\s*",
+    re.IGNORECASE,
+)
+_SUBLABEL_ONLY_RE = re.compile(r"^\s*\(?([a-zA-Z])\)?\s*$")
+
+
 def _find_figure_captions_for_page(page) -> List[Dict]:
     """페이지에서 Figure 캡션 텍스트와 위치(bbox)를 추출하여 반환.
-    반환: [{"text": str, "y": float}, ...] — y는 페이지 상단으로부터의 위치
+    반환: [{"text": str, "bbox": [x0,y0,x1,y1], "y": float, "figure_number": "Fig. 5"}, ...]
+
+    개선 사항 (요청서 §5):
+      1) 라인 단위로 스캔하여 Fig./Figure/그림/도면 + 숫자 패턴을 정규식으로 탐지
+      2) 캡션 다음에 이어지는 줄을 자동 병합(다음 캡션/섹션/너무 먼 텍스트 전까지)
+      3) 단독 (a)/(b) 라벨은 캡션 시작으로 인정하지 않음 — 실제 Fig. N. 본문을 캡션으로 사용
+      4) caption_bbox 와 figure_number(예: 'Fig. 5') 를 함께 반환
     """
-    caption_prefixes = ["fig.", "figure", "그림", "도면"]
-    captions = []
+    captions: List[Dict] = []
     try:
         blocks = page.get_text("dict", flags=fitz.TEXT_PRESERVE_WHITESPACE).get("blocks", [])
-        for block in blocks:
-            if block.get("type") != 0:  # text block
-                continue
-            block_text = "".join(
-                span["text"] for line in block.get("lines", []) for span in line.get("spans", [])
-            ).strip()
-            low = block_text.lower()
-            if any(low.startswith(p) for p in caption_prefixes):
-                y_pos = block["bbox"][1]  # top-y coordinate
-                captions.append({"text": block_text, "y": y_pos})
     except Exception:
-        pass
+        return captions
+
+    # 1) 모든 텍스트 라인을 평탄화 (bbox 포함)
+    lines: List[Dict] = []
+    for block in blocks:
+        if block.get("type") != 0:
+            continue
+        for line in block.get("lines", []):
+            line_text = "".join(span.get("text", "") for span in line.get("spans", [])).strip()
+            if not line_text:
+                continue
+            lbbox = line.get("bbox")
+            if not lbbox:
+                continue
+            lines.append({"text": line_text, "bbox": list(lbbox)})
+
+    if not lines:
+        return captions
+
+    # top → bottom, left → right 순으로 정렬
+    lines.sort(key=lambda l: (round(l["bbox"][1], 1), l["bbox"][0]))
+
+    # 2) 캡션 시작 라인을 찾고, 이어지는 줄을 병합
+    n = len(lines)
+    i = 0
+    while i < n:
+        ln = lines[i]
+        text = ln["text"]
+        m = _CAPTION_START_RE.match(text)
+        if not m:
+            i += 1
+            continue
+        prefix_raw = m.group(1).lower()
+        if prefix_raw.startswith("fig"):
+            fig_label = "Fig."
+        elif prefix_raw == "figure":
+            fig_label = "Figure"
+        elif prefix_raw == "그림":
+            fig_label = "그림"
+        elif prefix_raw == "도면":
+            fig_label = "도면"
+        else:
+            fig_label = m.group(1)
+        fig_num = m.group(2)
+        sub = (m.group(3) or "").strip()
+        figure_number = f"{fig_label} {fig_num}{sub}".strip()
+
+        cap_bbox = list(ln["bbox"])
+        cap_text_parts = [text]
+
+        j = i + 1
+        line_height = max(cap_bbox[3] - cap_bbox[1], 1.0)
+        while j < n and len(cap_text_parts) < 6:
+            nxt = lines[j]
+            ntxt = nxt["text"]
+            # 새 캡션 패턴이 나오면 중단
+            if _CAPTION_START_RE.match(ntxt):
+                break
+            # (a) / (b) 등 단독 sublabel은 캡션 일부로 끌어오지 않음
+            if _SUBLABEL_ONLY_RE.match(ntxt):
+                break
+            # 수직 거리 검사 — 다음 줄 top이 현재 캡션 bottom으로부터 line_height*1.6 이내
+            gap = nxt["bbox"][1] - cap_bbox[3]
+            if gap > line_height * 1.6:
+                break
+            # 수평 겹침 검사 — 캡션 x-범위와 어느 정도 겹쳐야 함
+            cx0, cx1 = cap_bbox[0], cap_bbox[2]
+            nx0, nx1 = nxt["bbox"][0], nxt["bbox"][2]
+            if min(cx1, nx1) - max(cx0, nx0) < -10:
+                break
+            # 섹션 헤더처럼 보이면 중단(전부 대문자, 짧음)
+            if len(ntxt) < 30 and re.match(r"^[A-Z][A-Z0-9 \.\-]+$", ntxt):
+                break
+            cap_text_parts.append(ntxt)
+            cap_bbox[0] = min(cap_bbox[0], nxt["bbox"][0])
+            cap_bbox[1] = min(cap_bbox[1], nxt["bbox"][1])
+            cap_bbox[2] = max(cap_bbox[2], nxt["bbox"][2])
+            cap_bbox[3] = max(cap_bbox[3], nxt["bbox"][3])
+            line_height = max(nxt["bbox"][3] - nxt["bbox"][1], line_height)
+            j += 1
+
+        merged_text = " ".join(cap_text_parts)
+        merged_text = re.sub(r"\s+", " ", merged_text).strip()
+        captions.append({
+            "text": merged_text,
+            "bbox": cap_bbox,
+            "y": cap_bbox[1],
+            "figure_number": figure_number,
+        })
+        i = j
+
     return captions
 
 
@@ -761,35 +853,79 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
                 seen_size_byte_keys.add(size_byte_key)
 
                 # 이미지 위치 기반으로 가장 가까운 캡션 및 주변 문맥 찾기
+                # (요청서 §5: 이미지 bbox 바로 아래 텍스트 우선, x축 겹침 고려, 너무 먼 텍스트 제외)
                 nearest_caption = ""
                 caption_source = ""
+                caption_bbox = None
+                figure_number_str = ""
                 surrounding_text = ""
+
                 if img_bbox and page_captions:
-                    img_bottom_y = img_bbox[3]  # 이미지 하단 y
-                    img_top_y = img_bbox[1]     # 이미지 상단 y
-                    # 이미지 바로 아래(또는 위)에 있는 캡션을 우선
-                    below = [(abs(c["y"] - img_bottom_y), c["text"]) for c in page_captions if c["y"] >= img_bottom_y - 5]
-                    above = [(abs(c["y"] - img_top_y), c["text"]) for c in page_captions if c["y"] < img_top_y + 5]
-                    if below:
-                        nearest_caption = sorted(below, key=lambda x: x[0])[0][1]
-                        caption_source = "below_image"
-                    elif above:
-                        nearest_caption = sorted(above, key=lambda x: x[0])[0][1]
-                        caption_source = "above_image"
+                    ix0, iy0, ix1, iy1 = img_bbox
+                    img_w_span = max(ix1 - ix0, 1.0)
+
+                    def _x_overlap_ratio(cb):
+                        if not cb:
+                            return 0.0
+                        left = max(ix0, cb[0])
+                        right = min(ix1, cb[2])
+                        return max(0.0, right - left) / img_w_span
+
+                    # 1순위: 이미지 바로 아래 (cap.y_top > img.y_bottom 근처) + x-겹침
+                    below_candidates = []
+                    for c in page_captions:
+                        cb = c.get("bbox")
+                        cy_top = cb[1] if cb else c["y"]
+                        if cy_top >= iy1 - 5:  # 이미지 하단보다 아래(약간의 여유)
+                            dist = cy_top - iy1
+                            xov = _x_overlap_ratio(cb)
+                            below_candidates.append((dist, -xov, c))
+                    if below_candidates:
+                        # 너무 먼 caption(>250pt)은 제외
+                        below_candidates = [b for b in below_candidates if b[0] <= 250]
+                    if below_candidates:
+                        # x-겹침 큰 것 우선, 그 다음 가까운 것
+                        below_candidates.sort(key=lambda t: (t[1], t[0]))
+                        chosen = below_candidates[0][2]
+                        nearest_caption = chosen["text"]
+                        caption_bbox = chosen.get("bbox")
+                        figure_number_str = chosen.get("figure_number", "")
+                        caption_source = "below_image_text"
+                    else:
+                        # 2순위: 이미지 위쪽 (cap.y_bottom < img.y_top 근처)
+                        above_candidates = []
+                        for c in page_captions:
+                            cb = c.get("bbox")
+                            cy_bottom = cb[3] if cb else c["y"]
+                            if cy_bottom <= iy0 + 5:
+                                dist = iy0 - cy_bottom
+                                xov = _x_overlap_ratio(cb)
+                                above_candidates.append((dist, -xov, c))
+                        above_candidates = [a for a in above_candidates if a[0] <= 250]
+                        if above_candidates:
+                            above_candidates.sort(key=lambda t: (t[1], t[0]))
+                            chosen = above_candidates[0][2]
+                            nearest_caption = chosen["text"]
+                            caption_bbox = chosen.get("bbox")
+                            figure_number_str = chosen.get("figure_number", "")
+                            caption_source = "above_image_text"
 
                 if img_bbox:
                     surrounding_text = _extract_surrounding_text(page, img_bbox)
 
-                # nearest_caption이 비어있으면 page-level caption hint를 fallback으로 사용
+                # caption_hint는 Vision LLM 컨텍스트용 — nearest_caption이 있으면 그것만 사용
+                # (page-level dump 사용을 줄여 다른 figure caption과 섞이지 않도록)
                 if nearest_caption:
                     caption_hint = nearest_caption
                 else:
                     caption_hint = page_caption_hint
-                    if page_caption_hint:
+                    if page_caption_hint and not caption_source:
                         caption_source = "page_caption_hint"
 
-                # nearest_caption에서 Figure 번호 파싱 → fig_label로 저장
-                fig_label = _parse_fig_number_from_caption(nearest_caption) or ""
+                # figure_number_str(예: 'Fig. 5') 가 있으면 우선, 없으면 캡션 텍스트에서 파싱
+                fig_label = (_normalize_fig_number(figure_number_str)
+                             or _parse_fig_number_from_caption(nearest_caption)
+                             or "")
 
                 figure_index_counter += 1
                 candidates.append({
@@ -804,11 +940,19 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
                     "byte_len": len(png_bytes),
                     "caption_hint": caption_hint,
                     "nearest_caption": nearest_caption,
-                    "caption_source": caption_source,  # below_image / above_image / page_caption_hint / ""
+                    # 요청서 §4 — 명시적 키 (외부/검증용)
+                    "original_caption": nearest_caption,
+                    "translated_caption": "",  # 번역은 후속 단계에서 채움
+                    "caption_bbox": caption_bbox,
+                    "caption_source": caption_source,  # below_image_text / above_image_text / page_caption_hint / ""
                     "surrounding_text": surrounding_text,
-                    "fig_label": fig_label,   # 파싱된 Figure 번호 (예: "3", "1a")
-                    "hash": img_hash,         # 외부 명세 호환
-                    "_img_hash": img_hash,    # 기존 코드 호환 (제거하지 않음)
+                    "fig_label": fig_label,           # 순수 숫자 (예: "3", "1a")
+                    "figure_number": figure_number_str or (f"Fig. {fig_label}" if fig_label else ""),
+                    "hash": img_hash,                 # 외부 명세 호환
+                    "_img_hash": img_hash,            # 기존 코드 호환 (제거하지 않음)
+                    "image_hash": img_hash,           # 요청서 §4 명시 키
+                    "image_source": "embedded",
+                    "selection_reason": "",
                 })
             except Exception:
                 continue
@@ -833,7 +977,183 @@ def extract_images(doc: fitz.Document, max_candidates=20, min_pixels=120_000) ->
 
     # 캡션 있는 Figure 먼저, 이후 캡션 없는 것 추가
     merged = deduped + no_label
-    return merged[:max_candidates]
+
+    # ── 요청서 §6: page render + caption-bbox 기준 crop fallback ────────────
+    # embedded image 추출만으로는 못 잡은 figure(벡터 그래픽 등)를 복구한다.
+    # 이미 캡션과 매칭된 figure_number는 건너뛰고, 미매칭 캡션에 대해서만 crop.
+    try:
+        crop_candidates = _extract_figures_via_page_crop(doc, merged)
+    except Exception as e:
+        print(f"  [WARN] page-crop fallback failed entirely: {e}")
+        crop_candidates = []
+
+    if crop_candidates:
+        existing_hashes = {c.get("hash") or c.get("_img_hash") for c in merged if c.get("hash") or c.get("_img_hash")}
+        existing_fignum = {(_normalize_fig_number(c.get("figure_number","") or c.get("fig_label","")) or "")
+                           for c in merged}
+        existing_fignum.discard("")
+        for cc in crop_candidates:
+            ch = cc.get("hash") or cc.get("_img_hash")
+            cf = _normalize_fig_number(cc.get("figure_number","") or cc.get("fig_label","")) or ""
+            if ch and ch in existing_hashes:
+                continue
+            if cf and cf in existing_fignum:
+                # 같은 figure_number는 embedded image를 이미 보유 → crop 본은 폐기
+                continue
+            figure_index_counter += 1
+            cc["figure_index"] = figure_index_counter
+            merged.append(cc)
+            if ch:
+                existing_hashes.add(ch)
+            if cf:
+                existing_fignum.add(cf)
+
+    final = merged[:max_candidates]
+
+    # 요청서 §13 — figure candidate 로그
+    print(f"  [INFO] figure candidates: total={len(final)} "
+          f"(embedded={sum(1 for c in final if c.get('image_source')=='embedded')}, "
+          f"page_crop={sum(1 for c in final if c.get('image_source')=='page_crop')})")
+    for c in final:
+        figno = c.get("figure_number") or (f"Fig. {c.get('fig_label')}" if c.get('fig_label') else "?")
+        oc = (c.get("original_caption") or "")[:80]
+        src = c.get("caption_source") or "?"
+        idx_str = str(c.get("figure_index") if c.get("figure_index") is not None else "?")
+        page_str = str(c.get("page") if c.get("page") is not None else "?")
+        print(f"  [INFO]   - idx={idx_str:>2} page={page_str:>2} "
+              f"src={c.get('image_source','?')} {figno!s:<10} caption_src={src} "
+              f"original_caption='{oc}'")
+
+    return final
+
+
+def _extract_figures_via_page_crop(doc: 'fitz.Document', existing_candidates: List[Dict],
+                                    render_zoom: float = 2.0) -> List[Dict]:
+    """이미지 추출 fallback (요청서 §6).
+
+    각 페이지에서 caption은 있는데 embedded image로 매칭되지 못한 경우,
+    페이지를 렌더링해 caption_bbox 바로 위쪽 영역을 figure 영역으로 추정해 crop.
+    """
+    import hashlib
+    out: List[Dict] = []
+
+    matched_fignum_by_page: Dict[int, set] = {}
+    for c in existing_candidates:
+        pg = c.get("page") or c.get("page_number")
+        fn = _normalize_fig_number(c.get("figure_number","") or c.get("fig_label","")) or ""
+        if pg and fn:
+            matched_fignum_by_page.setdefault(pg, set()).add(fn)
+
+    for pi in range(doc.page_count):
+        try:
+            page = doc.load_page(pi)
+        except Exception:
+            continue
+        try:
+            page_captions = _find_figure_captions_for_page(page)
+        except Exception:
+            page_captions = []
+        if not page_captions:
+            continue
+
+        existing = matched_fignum_by_page.get(pi + 1, set())
+        page_w = page.rect.width
+        page_h = page.rect.height
+
+        # 캡션을 y-top 순으로 정렬해 위쪽 cap 의 bottom을 다음 cap의 crop top 한계로 사용
+        sorted_caps = sorted(page_captions, key=lambda c: c.get("bbox", [0,0,0,0])[1])
+
+        for cap_idx, cap in enumerate(sorted_caps):
+            fignum = _normalize_fig_number(cap.get("figure_number","")) or ""
+            if not fignum:
+                continue
+            if fignum in existing:
+                continue
+
+            cap_bbox = cap.get("bbox")
+            if not cap_bbox:
+                continue
+
+            # 위쪽 한계 = 직전 캡션 bottom + 5pt, 없으면 페이지 상단
+            upper_limit = 0.0
+            for prev in sorted_caps[:cap_idx]:
+                pb = prev.get("bbox")
+                if pb and pb[3] < cap_bbox[1]:
+                    if pb[3] + 5.0 > upper_limit:
+                        upper_limit = pb[3] + 5.0
+            # crop 영역이 페이지의 70% 이하가 되도록 강제
+            min_top_by_height = cap_bbox[1] - page_h * 0.70
+            top = max(upper_limit, min_top_by_height, 0.0)
+            bottom = max(top + 10.0, cap_bbox[1] - 2.0)
+            # 좌우 — caption 좌우보다 약간 더 넓게 (10% 패딩)
+            pad_x = page_w * 0.05
+            left = max(0.0, cap_bbox[0] - pad_x)
+            right = min(page_w, cap_bbox[2] + pad_x)
+            # 캡션이 좁으면 figure는 더 넓을 수 있으므로 확장
+            if (right - left) < page_w * 0.5:
+                left = max(0.0, cap_bbox[0] - page_w * 0.15)
+                right = min(page_w, cap_bbox[2] + page_w * 0.15)
+            if (bottom - top) < 30.0 or (right - left) < 50.0:
+                continue
+
+            crop_rect = fitz.Rect(left, top, right, bottom)
+            try:
+                mat = fitz.Matrix(render_zoom, render_zoom)
+                pix = page.get_pixmap(matrix=mat, clip=crop_rect, alpha=False)
+                png_bytes = pix.tobytes("png")
+            except Exception as e:
+                print(f"  [WARN] page-crop render failed: page={pi+1}, fig={fignum}: {e}")
+                continue
+
+            try:
+                png_bytes = trim_white_margin(png_bytes)
+            except Exception:
+                pass
+
+            if Image:
+                try:
+                    im = Image.open(io.BytesIO(png_bytes))
+                    img_w, img_h = im.size[0], im.size[1]
+                except Exception:
+                    img_w, img_h = pix.width, pix.height
+            else:
+                img_w, img_h = pix.width, pix.height
+
+            # 너무 작은 crop은 스킵 (figure가 아닐 가능성)
+            if img_w * img_h < 60_000:
+                continue
+
+            img_hash = hashlib.md5(png_bytes).hexdigest()
+            out.append({
+                "page": pi + 1,
+                "page_number": pi + 1,
+                "figure_index": None,  # 외부에서 부여
+                "area": img_w * img_h,
+                "width": img_w,
+                "height": img_h,
+                "bbox": [left, top, right, bottom],
+                "png_bytes": png_bytes,
+                "byte_len": len(png_bytes),
+                "caption_hint": cap["text"],
+                "nearest_caption": cap["text"],
+                "original_caption": cap["text"],
+                "translated_caption": "",
+                "caption_bbox": cap.get("bbox"),
+                "caption_source": "page_crop_above_caption",
+                "surrounding_text": "",
+                "fig_label": fignum,
+                "figure_number": cap.get("figure_number", ""),
+                "hash": img_hash,
+                "_img_hash": img_hash,
+                "image_hash": img_hash,
+                "image_source": "page_crop",
+                "selection_reason": "embedded extraction missed; recovered via page-crop",
+            })
+            print(f"  [INFO] page-crop fallback figure created: page={pi+1}, "
+                  f"fig={cap.get('figure_number','?')}, "
+                  f"orig_caption='{cap['text'][:60]}'")
+
+    return out
 
 
 import base64
@@ -873,6 +1193,23 @@ def _normalize_fig_number(fig_num: str) -> Optional[str]:
         return None
     m = re.search(r'(\d+)', str(fig_num))
     return m.group(1) if m else None
+
+
+def normalize_caption(caption: str) -> str:
+    """캡션 표시 전 정규화 — Fig.Fig. / Figure Figure / 그림 그림 같은 중복 prefix 제거.
+    요청서 §10 규칙."""
+    if not caption:
+        return ""
+    c = str(caption).strip()
+    # 'Fig.Fig.', 'Fig. Fig.', 'Fig.  Fig.' 등 중복 → 'Fig. '
+    c = re.sub(r"^(?:Fig\.?\s*){2,}", "Fig. ", c, flags=re.IGNORECASE)
+    c = re.sub(r"^(?:Figure\.?\s*){2,}", "Figure ", c, flags=re.IGNORECASE)
+    c = re.sub(r"^(?:그림\s*){2,}", "그림 ", c)
+    c = re.sub(r"^(?:도면\s*){2,}", "도면 ", c)
+    # 'Fig.' 바로 뒤가 'Figure'인 경우
+    c = re.sub(r"^Fig\.?\s*Figure\s*", "Fig. ", c, flags=re.IGNORECASE)
+    c = re.sub(r"\s+", " ", c).strip()
+    return c
 
 
 def _match_candidate_by_fig_info(
@@ -954,19 +1291,23 @@ def _translate_captions_only(
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
 
     prompt = (
-        "아래 두 Figure 원문 캡션을 각각 한국어 30자 내외로 번역하세요.\n"
-        "번역 규칙:\n"
+        "아래 두 Figure 원문 캡션(PDF에서 직접 추출됨)을 각각 한국어로 번역하세요.\n"
+        "번역 규칙 (반드시 준수):\n"
+        "- **반드시 제공된 원문 캡션 텍스트만 번역할 것. 새로 만들거나 추측 금지.**\n"
+        "- **Fig. 번호 (Fig. 1., Figure 2., 그림 3 등)는 번역 결과에서 그대로 유지할 것.**\n"
+        "  예: 'Fig. 1. Circuit diagram of 3ph LCL-filtered VSC IOBC system'\n"
+        "      → 'Fig. 1. 3상 LCL 필터 VSC IOBC 시스템 회로도'\n"
         "- 명사로 끝낼 것\n"
         "- '본 발명은/의', '본 연구의', '본 논문의' 등 표현 금지\n"
         "- 효과·결과 서술 금지 (무엇을 보여주는 그림인지만 설명)\n"
         "- 숫자+단위 붙여쓰기 (50kHz, 1.2A 등)\n"
-        "- '그림1', '그림2', 'Figure 1', 'Figure 2'처럼 번호만 적힌 라벨은 캡션으로 사용하지 말 것\n"
+        "- '그림1', '그림2', 'Figure 1', 'Figure 2'처럼 번호만 적힌 라벨은 캡션으로 사용하지 말 것 — 반드시 그림 내용 설명 포함\n"
         "- **[중요] 원문 캡션이 '(캡션 없음)' 이거나 비어있으면, 임의로 캡션을 만들지 말고 해당 caption은 빈 문자열(\"\")로 반환할 것**\n"
         + (f"\n{fig_title_context}" if fig_title_context else "") +
         f"\n\nFigure 1 원문 캡션: {cap1_raw or '(캡션 없음)'}\n"
         f"Figure 2 원문 캡션: {cap2_raw or '(캡션 없음)'}\n\n"
         "출력 형식 (JSON):\n"
-        '{"caption1": "번역된 캡션1 (원문 없으면 빈 문자열)", "caption2": "번역된 캡션2 (원문 없으면 빈 문자열)"}'
+        '{"caption1": "번역된 캡션1 (Fig. 번호 유지, 원문 없으면 빈 문자열)", "caption2": "번역된 캡션2 (Fig. 번호 유지, 원문 없으면 빈 문자열)"}'
     )
     try:
         if IS_GEMINI_MODEL(model) and HAS_GEMINI and gemini_key:
@@ -1012,17 +1353,19 @@ def _translate_captions_only(
 def _figures_are_duplicate(a: Dict, b: Dict) -> Tuple[bool, str]:
     """대표 이미지 2개가 사실상 동일한 이미지인지 다중 기준으로 판별.
     Returns: (is_duplicate, reason)
-    기준:
+    기준 (요청서 §7):
       1) 이미지 바이트 해시 일치
-      2) 같은 페이지 + bbox overlap > 0.7
-      3) 동일 width × height + 바이트 길이 차이 5% 이하
-      4) 동일 figure_index
+      2) 동일 figure_index
+      3) 같은 페이지 + bbox overlap > 0.7
+      4) 동일 width × height + 바이트 길이 차이 5% 이하
+      5) 동일 figure_number(또는 fig_label)
+      6) 동일 original_caption (정규화 후)
     """
     if not a or not b:
         return False, ""
     import hashlib
-    a_hash = a.get("hash") or a.get("_img_hash")
-    b_hash = b.get("hash") or b.get("_img_hash")
+    a_hash = a.get("hash") or a.get("_img_hash") or a.get("image_hash")
+    b_hash = b.get("hash") or b.get("_img_hash") or b.get("image_hash")
     if not a_hash and a.get("png_bytes"):
         a_hash = hashlib.md5(a["png_bytes"]).hexdigest()
     if not b_hash and b.get("png_bytes"):
@@ -1058,6 +1401,27 @@ def _figures_are_duplicate(a: Dict, b: Dict) -> Tuple[bool, str]:
             denom = max(a_bl, b_bl)
             if denom and abs(a_bl - b_bl) / float(denom) < 0.05:
                 return True, f"same_dims_close_bytes({a_w}x{a_h})"
+
+    # 5) 동일 figure_number / fig_label
+    a_fn = _normalize_fig_number(a.get("figure_number","") or a.get("fig_label","")) or ""
+    b_fn = _normalize_fig_number(b.get("figure_number","") or b.get("fig_label","")) or ""
+    if a_fn and b_fn and a_fn == b_fn:
+        # 같은 페이지에서 같은 figure_number는 거의 확실히 같은 figure
+        if a_page is not None and a_page == b_page:
+            return True, f"same_figure_number_same_page(Fig.{a_fn} p{a_page})"
+        # 다른 페이지여도 동일 fig_number는 중복으로 본다(논문 1편 기준)
+        return True, f"same_figure_number(Fig.{a_fn})"
+
+    # 6) 동일 original_caption
+    def _norm_cap(t: str) -> str:
+        if not t:
+            return ""
+        x = re.sub(r"\s+", " ", str(t)).strip().lower()
+        return x
+    a_cap = _norm_cap(a.get("original_caption","") or a.get("nearest_caption",""))
+    b_cap = _norm_cap(b.get("original_caption","") or b.get("nearest_caption",""))
+    if a_cap and b_cap and a_cap == b_cap and len(a_cap) > 15:
+        return True, f"identical_original_caption('{a_cap[:30]}...')"
 
     return False, ""
 
@@ -1193,14 +1557,19 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
 
         print(f"  [INFO] Both figures fully matched\u2192 skipping Vision LLM image selection.")
 
-        # 원문 캡션을 한국어로 번역 (캡션 생성만 LLM 경유)
-        cap1_raw = cf.get("nearest_caption", "") or cf.get("caption_hint", "")
-        cap2_raw = ef.get("nearest_caption", "") or ef.get("caption_hint", "")
+        # 원문 캡션을 한국어로 번역 — 반드시 PDF 원문(original_caption)만 사용 (요청서 §3-2)
+        cap1_raw = cf.get("original_caption", "") or cf.get("nearest_caption", "")
+        cap2_raw = ef.get("original_caption", "") or ef.get("nearest_caption", "")
         translated = _translate_captions_only(cap1_raw, cap2_raw,
                                               fig_title_context=fig_title_context,
                                               model=model)
         concept_cap = _strip_invention_phrases(translated[0])
         result_cap  = _strip_invention_phrases(translated[1])
+        # 선택된 figure dict에 번역 결과 저장 (PPT 표시 단계에서 우선 사용)
+        cf["translated_caption"] = concept_cap
+        ef["translated_caption"] = result_cap
+        cf["selection_reason"] = "text-LLM fig_number/page match"
+        ef["selection_reason"] = "text-LLM fig_number/page match"
         # ── 최종 선택 결과 로그 (matched-skip 경로) ──
         print(_figure_log_summary("concept", cf, concept_cap,
                                   "text-LLM fig_number/page match (Vision LLM skipped)"))
@@ -1219,27 +1588,35 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
 
     CAPTION_INSTRUCTION = (
         "아래는 문서에서 추출한 원본 이미지들입니다. "
-        "첨부된 문서 내용과 각 이미지의 **주변 문맥(Surrounding Text)**을 분석하여, 정확히 2개의 대표 이미지를 선정하세요. (새로운 이미지를 생성하지 마세요)\n\n"
+        "첨부된 문서 내용과 각 이미지의 **주변 문맥(Surrounding Text)** 및 **원문 캡션(original_caption)**을 분석하여, 정확히 2개의 대표 이미지를 선정하세요. (새로운 이미지를 생성하지 마세요)\n\n"
         "① [Concept 이미지]: 본문의 '제안 기술(Proposed Technology)' 또는 핵심 아키텍처/회로도/알고리즘/시스템 구성을 가장 잘 설명하는 대표 도면 1개\n"
         "② [Result 이미지]: 본문의 '개선 효과(Improvement Effect)' 또는 실험 결과/성능 평가/비교 그래프를 가장 잘 보여주는 대표 도면 1개\n\n"
-        "**[매우 중요] 중복 선택 절대 금지**:\n"
+        "**[매우 중요] 중복 선택 절대 금지 (요청서 §7,§9)**:\n"
         "- concept_index와 result_index는 반드시 서로 다른 번호여야 합니다.\n"
+        "- image_hash가 같은 후보 두 개를 선택하지 마세요.\n"
+        "- figure_number(예: Fig. 1)가 같은 후보 두 개를 선택하지 마세요.\n"
+        "- original_caption이 동일한 후보 두 개를 선택하지 마세요.\n"
         "- 시각적으로 동일하거나 거의 같은 이미지(같은 그래프의 단순 확대/반복/같은 figure의 sub-image)는 중복 선택하지 마세요.\n"
-        "- 두 이미지는 반드시 서로 다른 의미·용도를 가진 figure여야 합니다 (예: 구조도 + 결과 그래프).\n\n"
+        "- 두 이미지는 반드시 서로 다른 의미·용도를 가진 figure여야 합니다 (예: 구조도 + 결과 그래프).\n"
+        "- original_caption이 비어있는 후보보다 캡션이 정상적으로 추출된 후보를 우선 선택하세요.\n\n"
         + fig_title_context +
-        "\n**캡션 작성 규칙 (반드시 준수)**:\n"
-        "- 가능하면 각 이미지에 표시된 '원문 캡션(원문 caption)'을 한국어로 짧게 번역하여 사용하세요. 원문 caption이 명확하면 그것을 최우선으로 활용.\n"
-        "- 원문 caption이 없거나 불명확하면, 주변 문맥(Surrounding Text)을 근거로 도면이 설명하는 핵심 기술적 가치를 1~2줄로 요약하세요.\n"
-        "- **[중요] 원문 caption도 없고 주변 문맥도 부족하여 캡션을 확실히 알 수 없는 경우, 임의로 만들지 말고 빈 문자열(\"\")을 반환하세요. (후처리 단계에서 fallback 문구로 자동 대체됩니다)**\n"
+        "\n**캡션 작성 규칙 (반드시 준수, 요청서 §3-2,§8)**:\n"
+        "- **반드시 제공된 original_caption(PDF 원문에서 추출)만 한국어로 번역하여 사용하세요.**\n"
+        "- **새로운 캡션을 생성하거나 추측하지 마세요.**\n"
+        "- **번역 결과에서 Fig. 번호 (Fig. 1., Figure 2., 그림 3 등)는 반드시 유지하세요.**\n"
+        "  예: 'Fig. 1. Circuit diagram of 3ph LCL-filtered VSC IOBC system'\n"
+        "      → 'Fig. 1. 3상 LCL 필터 VSC IOBC 시스템 회로도'\n"
+        "- original_caption이 없거나 비어있을 때만 주변 문맥(Surrounding Text)을 근거로 도면이 설명하는 핵심 기술적 가치를 1~2줄로 요약하세요.\n"
+        "- **[중요] original_caption도 없고 주변 문맥도 부족하여 캡션을 확실히 알 수 없는 경우, 임의로 만들지 말고 빈 문자열(\"\")을 반환하세요.**\n"
         "- 단, 효과, 성능 향상, 개선 결과만을 서술하는 문장이 아니어야 합니다.\n"
         "- '~향상', '~개선', '~감소', '~증가' 등 효과·결과를 나타내는 말로 캡션을 끝내지 마세요.\n"
         "- **중요: 반드시 명사형으로 끝내야 합니다.**\n"
         "- **[금지 표현]** '본 발명은', '본 발명의', '본 연구의', '이 도면은' 등의 표현은 절대 사용 금지.\n"
         "- '그림1', '그림2', 'Figure 1', 'Figure 2' 처럼 번호만 적힌 라벨은 캡션으로 쓰지 말 것 — 반드시 그림 내용 설명을 포함해야 함.\n"
-        "- 예시 (올바른 캡션): '적용형 DC-LINK 공통 레그 구조를 활용한 듀얼 인버터 기반 트랙션-보조전원 통합 회로도'\n"
+        "- 예시 (올바른 캡션): 'Fig. 5. 적용형 DC-LINK 공통 레그 구조를 활용한 듀얼 인버터 기반 트랙션-보조전원 통합 회로도'\n"
         "- 예시 (잘못된 캡션): '본 발명의 효율성 향상 그래프' (금지 표현 + 효과 서술이므로 금지)\n\n"
-        "출력은 반드시 다음 JSON 형식으로 하세요:\n"
-        '{\n  "concept_index": 0,\n  "concept_caption": "컨셉 이미지 핵심 가치 요약 캡션 (없으면 빈 문자열)",\n  "result_index": 1,\n  "result_caption": "결과 이미지 핵심 가치 요약 캡션 (없으면 빈 문자열)"\n}'
+        "출력은 반드시 다음 JSON 형식으로 하세요 (마크다운 코드블록 없이):\n"
+        '{\n  "concept_index": 0,\n  "concept_caption": "컨셉 이미지 한국어 캡션 (Fig. 번호 유지, 없으면 빈 문자열)",\n  "result_index": 1,\n  "result_caption": "결과 이미지 한국어 캡션 (Fig. 번호 유지, 없으면 빈 문자열)"\n}'
     )
 
     content = [{"type": "text", "text": CAPTION_INSTRUCTION}]
@@ -1249,14 +1626,22 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
         context_text += "\n...\n" + paper_text[5000:8000]
     content.append({"type": "text", "text": f"\n\n[문서 내용 일부]\n{context_text}"})
 
-    # Add images with caption hints and surrounding text
+    # Add images with caption hints, figure_number, image_hash and surrounding text
     for idx, c in enumerate(top_candidates):
         b64 = base64.b64encode(c["png_bytes"]).decode("utf-8")
-        cap_info = c.get("nearest_caption") or c.get("caption_hint", "")
-        cap_info_str = f" (원문 캡션: {cap_info})" if cap_info else ""
+        cap_info = c.get("original_caption") or c.get("nearest_caption") or c.get("caption_hint", "")
+        fignum = c.get("figure_number", "") or (f"Fig. {c.get('fig_label')}" if c.get('fig_label') else "")
+        ihash = (c.get("image_hash") or c.get("hash") or c.get("_img_hash") or "")[:8]
+        meta_parts = [f"figure_number={fignum or '?'}", f"image_hash={ihash or '?'}",
+                      f"page={c.get('page','?')}"]
+        meta_str = " | ".join(meta_parts)
+        cap_info_str = f"\n  [original_caption]: {cap_info}" if cap_info else "\n  [original_caption]: (없음)"
         surrounding = c.get("surrounding_text", "")
         surrounding_str = f"\n  [주변 문맥]: {surrounding[:500]}" if surrounding else ""
-        content.append({"type": "text", "text": f"--- 이미지 후보 번호: {idx}{cap_info_str}{surrounding_str} ---"})
+        content.append({
+            "type": "text",
+            "text": f"--- 이미지 후보 번호: {idx} | {meta_str}{cap_info_str}{surrounding_str} ---"
+        })
         content.append({
             "type": "image_url",
             "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "low"}
@@ -1293,11 +1678,14 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
                 f"\n[문서 내용 일부]\n{context_text}"
             ]
             for idx, c in enumerate(top_candidates):
-                cap_info = c.get("nearest_caption") or c.get("caption_hint", "")
-                cap_str = f" (원문 캡션: {cap_info})" if cap_info else ""
+                cap_info = c.get("original_caption") or c.get("nearest_caption") or c.get("caption_hint", "")
+                fignum = c.get("figure_number", "") or (f"Fig. {c.get('fig_label')}" if c.get('fig_label') else "")
+                ihash = (c.get("image_hash") or c.get("hash") or c.get("_img_hash") or "")[:8]
+                meta_str = f"figure_number={fignum or '?'} | image_hash={ihash or '?'} | page={c.get('page','?')}"
+                cap_str = f"\n  [original_caption]: {cap_info}" if cap_info else "\n  [original_caption]: (없음)"
                 surrounding = c.get("surrounding_text", "")
                 surrounding_str = f"\n  [주변 문맥]: {surrounding[:500]}" if surrounding else ""
-                parts.append(f"--- 이미지 후보 번호: {idx}{cap_str}{surrounding_str} ---")
+                parts.append(f"--- 이미지 후보 번호: {idx} | {meta_str}{cap_str}{surrounding_str} ---")
                 # PIL Image로 변환하여 전달 (Gemini SDK 호환성 최적)
                 pil_img = _PILImage.open(_io_cap.BytesIO(c["png_bytes"]))
                 parts.append(pil_img)
@@ -1375,16 +1763,25 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
         concept_cap = _strip_invention_phrases(concept_cap)
         result_cap = _strip_invention_phrases(result_cap)
 
-        concept_fig, concept_cap = _fig_or_none(concept_fig, concept_cap)
-        effect_fig, result_cap = _fig_or_none(effect_fig, result_cap)
-
-        # ── 최종 선택 결과 로그 (Vision LLM 경로) ──
+        # ── 최종 선택 사유 결정 ──
         c_reason = "Vision LLM concept selection"
         if matched_concept_idx is not None:
             c_reason += " (overridden by text-LLM fig match)"
         r_reason = "Vision LLM result selection"
         if matched_result_idx is not None:
             r_reason += " (overridden by text-LLM fig match)"
+
+        # ── 번역 결과를 figure dict에 보존 (PPT 표시 단계에서 우선 사용) ──
+        # _fig_or_none이 None을 반환하기 전에 dict에 저장
+        if concept_fig is not None:
+            concept_fig["translated_caption"] = concept_cap
+            concept_fig["selection_reason"] = c_reason
+        if effect_fig is not None:
+            effect_fig["translated_caption"] = result_cap
+            effect_fig["selection_reason"] = r_reason
+
+        concept_fig, concept_cap = _fig_or_none(concept_fig, concept_cap)
+        effect_fig, result_cap = _fig_or_none(effect_fig, result_cap)
         print(_figure_log_summary("concept", concept_fig, concept_cap, c_reason))
         print(_figure_log_summary("result",  effect_fig,  result_cap,  r_reason))
 
@@ -1394,9 +1791,9 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
         print(f"  [WARN] Vision API failed: {e}. Falling back to heuristic.")
         try:
             c, e_fig = pick_two_figures(candidates)
-            # heuristic 폴백 시에도 캡션 힌트가 있으면 번역 시도
-            cap1_raw = c.get("nearest_caption", "") if c else ""
-            cap2_raw = e_fig.get("nearest_caption", "") if e_fig else ""
+            # heuristic 폴백 시에도 PDF 원문 캡션이 있으면 번역 시도
+            cap1_raw = (c.get("original_caption", "") or c.get("nearest_caption", "")) if c else ""
+            cap2_raw = (e_fig.get("original_caption", "") or e_fig.get("nearest_caption", "")) if e_fig else ""
             if cap1_raw or cap2_raw:
                 try:
                     translated = _translate_captions_only(
@@ -1410,6 +1807,12 @@ def pick_two_figures_with_vision(candidates: List[Dict], paper_text: str, model:
                     cap1, cap2 = "", ""
             else:
                 cap1, cap2 = "", ""
+            if c is not None:
+                c["translated_caption"] = cap1
+                c["selection_reason"] = "heuristic fallback (Vision LLM failed)"
+            if e_fig is not None:
+                e_fig["translated_caption"] = cap2
+                e_fig["selection_reason"] = "heuristic fallback (Vision LLM failed)"
             return c, e_fig, [cap1, cap2]
         except Exception:
             return None, None, ["", ""]
@@ -2300,33 +2703,71 @@ def fill_slide(slide, brief: Brief, doc_idx: int, concept_fig: Optional[Dict] = 
     def _build_caption_label(fig_dict: Optional[Dict], cap_ko: str,
                              fig_number_from_brief: str, slot_idx: int) -> str:
         """이미지 슬롯 1개의 표시용 캡션 텍스트를 생성.
-        규칙:
-        - cap_ko가 있으면: "Fig. N. {cap_ko}" (또는 fig_number 없으면 cap_ko만)
-        - cap_ko가 없으면: "논문 p.{page} 대표 이미지 - 캡션 확인 필요" fallback
-        - "그림1", "그림2" 단독 라벨은 출력하지 않는다
+
+        우선순위 (요청서 §11):
+          1) translated_caption (한국어 번역본) — figure dict 또는 cap_ko 인자
+          2) original_caption (PDF 원문 영문 캡션) — figure dict
+          3) fallback: "논문 p.{page} 대표 이미지 - 캡션 확인 필요"
+
+        부가 규칙 (요청서 §10):
+          - 캡션이 이미 'Fig./Figure/그림/도면'으로 시작하면 prefix를 다시 붙이지 않음
+          - normalize_caption()으로 'Fig.Fig.' 같은 중복 prefix 제거
+          - "그림1", "그림2" 단독 라벨은 출력하지 않음
         """
-        # fig_number 결정 우선순위: 이미지 객체의 fig_label → brief.representative_figures
+        # fig_number 결정 우선순위: 이미지 객체의 fig_label/figure_number → brief.representative_figures
         fig_num = ""
         if fig_dict:
-            fig_num = (_normalize_fig_number(fig_dict.get("fig_label", "")) or "")
+            fig_num = (_normalize_fig_number(fig_dict.get("fig_label", ""))
+                       or _normalize_fig_number(fig_dict.get("figure_number", ""))
+                       or "")
         if not fig_num:
             fig_num = _normalize_fig_number(fig_number_from_brief) or ""
 
-        cap_ko_clean = (cap_ko or "").strip()
-        if cap_ko_clean:
-            if fig_num:
-                return f"Fig. {fig_num}. {cap_ko_clean}"
-            return cap_ko_clean
+        # 1) translated_caption — cap_ko 인자(=brief.figure_captions_ko) 우선, 그 다음 figure dict
+        translated = (cap_ko or "").strip()
+        if not translated and fig_dict:
+            translated = (fig_dict.get("translated_caption") or "").strip()
 
-        # caption 미검출 fallback
+        # 2) original_caption — figure dict
+        original = ""
+        if fig_dict:
+            original = (fig_dict.get("original_caption")
+                        or fig_dict.get("nearest_caption")
+                        or "").strip()
+
+        chosen = translated or original
+        chosen_source = "translated_caption" if translated else ("original_caption" if original else "")
+
+        if chosen:
+            chosen = normalize_caption(chosen)
+            # 단독 라벨("그림1", "Figure 1" 등)은 캡션으로 인정하지 않음
+            if re.match(r"^(?:Fig\.?|Figure|그림|도면)\s*\d+\s*$", chosen, re.IGNORECASE):
+                chosen = ""
+            elif re.match(r"^\s*(?:Fig\.?|Figure|그림|도면)", chosen, re.IGNORECASE):
+                # 이미 Fig./Figure/그림 등으로 시작 → prefix 재첨부 금지
+                return chosen
+            else:
+                if fig_num:
+                    return f"Fig. {fig_num}. {chosen}"
+                return chosen
+
+        # caption 미검출 fallback (요청서 §12)
         page_str = ""
         if fig_dict:
             page_str = str(fig_dict.get("page") or fig_dict.get("page_number") or "")
+        print(f"  [WARN] caption fallback used: slot={slot_idx} page={page_str or '?'} "
+              f"fig_number={fig_num or '?'} (no translated/original caption available)")
         if page_str:
-            print(f"  [INFO] Caption not detected for figure slot {slot_idx} "
-                  f"(page={page_str}, fig_number={fig_num or '?'}) — using fallback label.")
             return f"논문 p.{page_str} 대표 이미지 - 캡션 확인 필요"
         return "대표 이미지 - 캡션 확인 필요"
+
+    def _build_image_missing_label(fig_number_from_brief: str, slot_idx: int) -> str:
+        """이미지 추출 fallback 표시(요청서 §12). 'Fig.Fig.' 중복 prefix 방지."""
+        fn = _normalize_fig_number(fig_number_from_brief) or ""
+        ref = f"Fig. {fn}. " if fn else ""
+        msg = normalize_caption(f"{ref}이미지 추출 불가로 원본 확인 필요")
+        print(f"  [ERROR] image fallback used: slot={slot_idx} fig_number={fn or '?'}")
+        return msg
 
     if concept_fig and concept_fig.get("png_bytes"):
         box = replace_picture(slide, SHAPE_DIAGRAM1, concept_fig["png_bytes"], "concept")
@@ -2339,8 +2780,7 @@ def fill_slide(slide, brief: Brief, doc_idx: int, concept_fig: Optional[Dict] = 
         # 이미지 추출 불가 → 캡션 영역에 안내 텍스트만 기입, 이미지 영역은 그대로 유지
         sh_cap1 = _find_shape(slide, SHAPE_CAPTION1)
         if sh_cap1:
-            ref = f"Fig.{fig1_number}. " if fig1_number else ""
-            _replace_text_keep_format(sh_cap1, f"{ref}이미지 추출 불가로 원본 확인 필요")
+            _replace_text_keep_format(sh_cap1, _build_image_missing_label(fig1_number, 1))
 
     if effect_fig and effect_fig.get("png_bytes"):
         box = replace_picture(slide, SHAPE_DIAGRAM2, effect_fig["png_bytes"], "result")
@@ -2353,8 +2793,7 @@ def fill_slide(slide, brief: Brief, doc_idx: int, concept_fig: Optional[Dict] = 
         # 이미지 추출 불가 → 캡션 영역에 안내 텍스트만 기입, 이미지 영역은 그대로 유지
         sh_cap2 = _find_shape(slide, SHAPE_CAPTION2)
         if sh_cap2:
-            ref = f"Fig.{fig2_number}. " if fig2_number else ""
-            _replace_text_keep_format(sh_cap2, f"{ref}이미지 추출 불가로 원본 확인 필요")
+            _replace_text_keep_format(sh_cap2, _build_image_missing_label(fig2_number, 2))
 
 
 
